@@ -1,0 +1,8 @@
+{
+  "name": "kakebo-app-v2",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "echo 'Avvio non necessario per progetto statico'",
+    "build": "echo 'Build non necessaria per progetto statico'"
+  }
+}
