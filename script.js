@@ -1,10 +1,9 @@
-function aggiungiSpesa() {
-  const output = document.getElementById("output");
-  const voce = prompt("Inserisci descrizione spesa:");
-  const importo = prompt("Inserisci importo spesa in euro:");
-  if (voce && importo) {
-    const p = document.createElement("p");
-    p.textContent = voce + " - €" + importo;
-    output.appendChild(p);
-  }
-}
+const CATEGORIE={Sopravvivenza:["Alimentazione","Farmacia"],Optional:["Ristorante"],Cultura:["Libri"],Extra:["Viaggi"],Entrate:["Stipendio","Assegni"]};
+const KEY="kakebo_movimenti_v1";
+let MOVIMENTI=JSON.parse(localStorage.getItem(KEY)||"[]");
+function salva(){localStorage.setItem(KEY,JSON.stringify(MOVIMENTI))}
+function render(){const tb=document.querySelector("#tabella-movimenti tbody");tb.innerHTML="";for(const m of MOVIMENTI){const tr=document.createElement("tr");tr.innerHTML=`<td>${m.data}</td><td>${m.tipo}</td><td>${m.macro}</td><td>${m.cat}</td><td>€${m.imp.toFixed(2)}</td><td>${m.nota||""}</td><td><button onclick="delMov('${m.id}')">X</button></td>`;tb.appendChild(tr);}}
+function delMov(id){MOVIMENTI=MOVIMENTI.filter(x=>x.id!==id);salva();render();riepilogo()}
+document.getElementById("form-movimento").addEventListener("submit",e=>{e.preventDefault();const d=data.value;const i=parseFloat(importo.value);const t=tipo.value;const m=macro.value;const c=categoria.value;const n=nota.value;MOVIMENTI.unshift({id:crypto.randomUUID(),data:d,imp:i,tipo:t,macro:m,cat:c,nota:n});salva();render();riepilogo();e.target.reset()});
+function riepilogo(){const sel=mese-riepilogo.value;const delmese=MOVIMENTI.filter(m=>m.data.startsWith(sel));const tot={};let entr=0,sp=0;for(const m of delmese){if(m.tipo==='entrata'){entr+=m.imp}else{sp+=m.imp;tot[m.macro]=(tot[m.macro]||0)+m.imp}}const ul=document.getElementById("totali-macro");ul.innerHTML="";for(const k in tot){const li=document.createElement("li");li.textContent=`${k}: €${tot[k].toFixed(2)}`;ul.appendChild(li);}saldo-mese.textContent=`Entrate: €${entr.toFixed(2)} - Spese: €${sp.toFixed(2)} = Saldo: €${(entr-sp).toFixed(2)}`}}
+render();

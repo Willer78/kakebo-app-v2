@@ -1,17 +1,42 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Kakebo App</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-  <h1>Kakebo - Gestione Spese</h1>
-  <div id="app">
-    <button onclick="aggiungiSpesa()">Aggiungi spesa</button>
-    <div id="output"></div>
-  </div>
+  <header>
+    <h1>Kakebo – Gestione Spese</h1>
+    <nav>
+      <button id="tab-inserimento" class="tab active">Inserimento dati</button>
+      <button id="tab-riepilogo" class="tab">Riepilogo mensile</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="sezione-inserimento">
+      <form id="form-movimento">
+        <label>Data<input type="date" id="data" required/></label>
+        <label>Importo (€)<input type="number" id="importo" min="0" step="0.01" required/></label>
+        <label>Tipo<select id="tipo"><option value="spesa">Spesa</option><option value="entrata">Entrata</option><option value="mutuo">Mutuo</option></select></label>
+        <label>Macro<select id="macro"></select></label>
+        <label>Categoria<select id="categoria"></select></label>
+        <label>Nota<input type="text" id="nota"/></label>
+        <button type="submit">Aggiungi</button>
+      </form>
+      <h2>Ultimi movimenti</h2>
+      <table id="tabella-movimenti"><thead><tr><th>Data</th><th>Tipo</th><th>Macro</th><th>Categoria</th><th>Importo</th><th>Nota</th><th></th></tr></thead><tbody></tbody></table>
+    </section>
+
+    <section id="sezione-riepilogo" class="hidden">
+      <label>Mese<input type="month" id="mese-riepilogo"/></label>
+      <ul id="totali-macro"></ul>
+      <p id="saldo-mese"></p>
+    </section>
+  </main>
+
   <script src="script.js"></script>
 </body>
 </html>
