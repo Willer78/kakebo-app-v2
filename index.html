@@ -84,6 +84,7 @@
         <label>Mese
           <input type="month" id="mese-riepilogo"/>
         </label>
+        <button id="btn-pdf-mensile" class="secondary">Esporta PDF</button>
       </div>
 
       <div id="riepilogo-risultati">
@@ -103,6 +104,7 @@
         <label>Mese
           <input type="month" id="mese-riepilogo-sett"/>
         </label>
+        <button id="btn-pdf-sett" class="secondary">Esporta PDF</button>
       </div>
 
       <div id="riepilogo-sett-risultati">
@@ -130,6 +132,7 @@
         <label>Anno
           <input type="number" id="anno-tri" min="2000" step="1"/>
         </label>
+        <button id="btn-pdf-tri" class="secondary">Esporta PDF</button>
       </div>
 
       <div class="table-wrap">
@@ -156,6 +159,7 @@
         <label>Anno
           <input type="number" id="anno-ann" min="2000" step="1"/>
         </label>
+        <button id="btn-pdf-ann" class="secondary">Esporta PDF</button>
       </div>
 
       <div class="table-wrap">
@@ -192,5 +196,7 @@
   </footer>
 
   <script src="script.js"></script>
+  <!-- html2pdf for client-side PDF export -->
+  <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
 </body>
 </html>

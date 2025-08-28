@@ -159,11 +159,15 @@ document.getElementById("form-movimento").addEventListener("submit", (e)=>{
   inputData.value = todayStr();
   e.target.reset();
   refreshMacroETree();
+  aggiornaTuttiIRiepiloghi();
+});
+
+function aggiornaTuttiIRiepiloghi(){
   aggiornaRiepilogo();
   aggiornaRiepilogoSettimanale();
   aggiornaRiepilogoTrimestri();
   aggiornaRiepilogoAnnuale();
-});
+}
 
 // Pulsanti extra
 document.getElementById("pulisci").addEventListener("click", ()=>{
@@ -176,10 +180,7 @@ document.getElementById("cancella-tutto").addEventListener("click", ()=>{
     MOVIMENTI = [];
     salva();
     renderTabella();
-    aggiornaRiepilogo();
-    aggiornaRiepilogoSettimanale();
-    aggiornaRiepilogoTrimestri();
-    aggiornaRiepilogoAnnuale();
+    aggiornaTuttiIRiepiloghi();
   }
 });
 
@@ -206,10 +207,7 @@ function renderTabella(){
       MOVIMENTI = MOVIMENTI.filter(x=>x.id!==id);
       salva();
       renderTabella();
-      aggiornaRiepilogo();
-      aggiornaRiepilogoSettimanale();
-      aggiornaRiepilogoTrimestri();
-      aggiornaRiepilogoAnnuale();
+      aggiornaTuttiIRiepiloghi();
     });
   });
 }
@@ -319,3 +317,60 @@ function aggiornaRiepilogoAnnuale(){
   document.getElementById("ann-tot-montante").textContent = fmtMoney(montante);
 }
 inputAnnoAnn.addEventListener("change", aggiornaRiepilogoAnnuale);
+
+// === PDF EXPORT (html2pdf) ===
+function exportPDF(filename, titleText, subtitleText, tableNodeOrListNode, extraFooterText){
+  if(typeof html2pdf === "undefined"){ alert("Impossibile generare PDF (libreria non caricata)."); return; }
+  const container = document.createElement("div");
+  const title = document.createElement("h2"); title.className = "pdf-title"; title.textContent = titleText;
+  const sub = document.createElement("p"); sub.className = "pdf-sub"; sub.textContent = subtitleText;
+  container.appendChild(title); container.appendChild(sub);
+
+  // clone nodo (tabella o lista)
+  container.appendChild(tableNodeOrListNode.cloneNode(true));
+
+  if(extraFooterText){
+    const foot = document.createElement("p"); foot.className = "pdf-footer"; foot.textContent = extraFooterText;
+    container.appendChild(foot);
+  }
+
+  const opt = {
+    margin:       10,
+    filename:     filename,
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2, useCORS: true },
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+  html2pdf().set(opt).from(container).save();
+}
+
+// Bottoni PDF
+document.getElementById("btn-pdf-mensile").addEventListener("click", ()=>{
+  aggiornaRiepilogo();
+  const ym = inputMese.value || "(mese)";
+  const ul = document.getElementById("totali-macro");
+  // includiamo anche il saldo come footer
+  const saldoTxt = document.getElementById("saldo-mese").textContent;
+  exportPDF(`Kakebo_Mensile_${ym}.pdf`, "Kakebo – Riepilogo mensile", `Mese: ${ym}`, ul, saldoTxt);
+});
+
+document.getElementById("btn-pdf-sett").addEventListener("click", ()=>{
+  aggiornaRiepilogoSettimanale();
+  const ym = inputMeseSett.value || "(mese)";
+  const tbl = document.getElementById("tabella-riepilogo-sett");
+  exportPDF(`Kakebo_Settimanale_${ym}.pdf`, "Kakebo – Riepilogo settimanale", `Mese contabile: ${ym}`, tbl, "Nota: il mutuo è escluso dai totali settimanali.");
+});
+
+document.getElementById("btn-pdf-tri").addEventListener("click", ()=>{
+  aggiornaRiepilogoTrimestri();
+  const y = document.getElementById("anno-tri").value || "(anno)";
+  const tbl = document.getElementById("tabella-riepilogo-tri");
+  exportPDF(`Kakebo_Trimestrale_${y}.pdf`, "Kakebo – Riepilogo trimestrale", `Anno: ${y}`, tbl, "Il mutuo è incluso nelle spese e mostrato separatamente.");
+});
+
+document.getElementById("btn-pdf-ann").addEventListener("click", ()=>{
+  aggiornaRiepilogoAnnuale();
+  const y = document.getElementById("anno-ann").value || "(anno)";
+  const tbl = document.getElementById("tabella-riepilogo-ann");
+  exportPDF(`Kakebo_Annuale_${y}.pdf`, "Kakebo – Riepilogo annuale", `Anno: ${y}`, tbl, "Il montante è la somma cumulata dei saldi mese.");
+});
