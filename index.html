@@ -12,22 +12,16 @@
     <nav>
       <button id="tab-inserimento" class="tab active">Inserimento dati</button>
       <button id="tab-riepilogo" class="tab">Riepilogo mensile</button>
+      <button id="tab-riepilogo-sett" class="tab">Riepilogo settimanale</button>
     </nav>
   </header>
 
   <main>
-    <!-- Inserimento -->
     <section id="sezione-inserimento">
       <form id="form-movimento" autocomplete="off">
         <div class="grid">
-          <label>Data
-            <input type="date" id="data" required/>
-          </label>
-
-          <label>Importo (€)
-            <input type="number" id="importo" min="0" step="0.01" required/>
-          </label>
-
+          <label>Data <input type="date" id="data" required/></label>
+          <label>Importo (€) <input type="number" id="importo" min="0" step="0.01" required/></label>
           <label>Tipo
             <select id="tipo" required>
               <option value="spesa">Spesa</option>
@@ -35,70 +29,52 @@
               <option value="mutuo">Mutuo (escluso dai totali settimanali)</option>
             </select>
           </label>
-
-          <label>Macro area
-            <select id="macro" required></select>
-          </label>
-
-          <label>Sotto-categoria
-            <select id="categoria" required></select>
-          </label>
-
-          <label>Nota (facoltativo)
-            <input type="text" id="nota" maxlength="120" placeholder="es. pranzo lavoro, regalo, bolletta…"/>
-          </label>
+          <label>Macro area <select id="macro" required></select></label>
+          <label>Sotto-categoria <select id="categoria" required></select></label>
+          <label>Nota (facoltativo) <input type="text" id="nota" maxlength="120" placeholder="es. pranzo lavoro, regalo, bolletta…"/></label>
         </div>
-
         <div class="actions">
           <button type="submit">Aggiungi</button>
           <button type="button" id="pulisci">Pulisci form</button>
           <button type="button" id="cancella-tutto" class="danger">Svuota archivio locale</button>
         </div>
       </form>
-
       <h2>Ultimi movimenti</h2>
       <div class="table-wrap">
         <table id="tabella-movimenti">
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Tipo</th>
-              <th>Macro</th>
-              <th>Categoria</th>
-              <th>Importo</th>
-              <th>Nota</th>
-              <th></th>
-            </tr>
-          </thead>
+          <thead><tr><th>Data</th><th>Tipo</th><th>Macro</th><th>Categoria</th><th>Importo</th><th>Nota</th><th></th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
     </section>
 
-    <!-- Riepilogo -->
     <section id="sezione-riepilogo" class="hidden">
-      <div class="filters">
-        <label>Mese
-          <input type="month" id="mese-riepilogo"/>
-        </label>
-      </div>
-
+      <div class="filters"><label>Mese <input type="month" id="mese-riepilogo"/></label></div>
       <div id="riepilogo-risultati">
         <h2>Totali per macro area (mese selezionato)</h2>
         <ul id="totali-macro"></ul>
-
         <h3>Saldo mese (entrate – spese)</h3>
         <p id="saldo-mese">—</p>
-
         <p class="hint">Nota: il mutuo è escluso dai totali settimanali, ma è incluso nel totale spese mensile qui indicato come voce separata.</p>
+      </div>
+    </section>
+
+    <section id="sezione-riepilogo-sett" class="hidden">
+      <div class="filters"><label>Mese <input type="month" id="mese-riepilogo-sett"/></label></div>
+      <div id="riepilogo-sett-risultati">
+        <h2>Settimane contabili (lun–dom)</h2>
+        <div class="table-wrap">
+          <table id="tabella-riepilogo-sett">
+            <thead><tr><th>Settimana</th><th>Entrate</th><th>Spese (senza mutuo)</th><th>Saldo</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="hint">Regola: se l'ultimo giorno del mese cade gio–dom la settimana resta al mese; se cade lun–mer, passa al mese successivo. Il mutuo è escluso dai totali settimanali.</p>
       </div>
     </section>
   </main>
 
-  <footer>
-    <small>Dati salvati in locale sul dispositivo (localStorage). In una fase successiva abiliteremo la sincronizzazione cloud.</small>
-  </footer>
-
+  <footer><small>Dati salvati in locale (localStorage). Sync cloud in futuro.</small></footer>
   <script src="script.js"></script>
 </body>
 </html>
