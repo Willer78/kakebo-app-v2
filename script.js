@@ -266,7 +266,6 @@ inputMeseSett.addEventListener("change", aggiornaRiepilogoSettimanale);
 // Riepilogo trimestrale
 const inputAnnoTri = document.getElementById("anno-tri");
 (function setDefaultYearTri(){ const d = new Date(); inputAnnoTri.value = d.getFullYear(); })();
-function quarterRange(year, q){ const startMonth=(q-1)*3; const start=new Date(year,startMonth,1); const end=new Date(year,startMonth+3,0); return {start,end}; }
 function aggiornaRiepilogoTrimestri(){
   const year = parseInt(inputAnnoTri.value, 10); if(isNaN(year)) return;
   const tbody = document.querySelector("#tabella-riepilogo-tri tbody"); tbody.innerHTML = "";
