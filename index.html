@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="it" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -8,14 +8,20 @@
 </head>
 <body>
   <header>
-    <h1>Kakebo – Gestione Spese</h1>
-    <nav>
-      <button id="tab-inserimento" class="tab active">Inserimento dati</button>
-      <button id="tab-riepilogo" class="tab">Riepilogo mensile</button>
-      <button id="tab-riepilogo-sett" class="tab">Riepilogo settimanale</button>
-      <button id="tab-riepilogo-tri" class="tab">Riepilogo trimestrale</button>
-      <button id="tab-riepilogo-ann" class="tab">Riepilogo annuale</button>
-    </nav>
+    <div class="header-left">
+      <h1>Kakebo – Gestione Spese</h1>
+      <nav>
+        <button id="tab-inserimento" class="tab active">Inserimento dati</button>
+        <button id="tab-riepilogo" class="tab">Riepilogo mensile</button>
+        <button id="tab-riepilogo-sett" class="tab">Riepilogo settimanale</button>
+        <button id="tab-riepilogo-tri" class="tab">Riepilogo trimestrale</button>
+        <button id="tab-riepilogo-ann" class="tab">Riepilogo annuale</button>
+        <button id="tab-dashboard" class="tab">Dashboard</button>
+      </nav>
+    </div>
+    <div class="header-right">
+      <button id="theme-toggle" title="Cambia tema">🌙/☀️</button>
+    </div>
   </header>
 
   <main>
@@ -85,6 +91,7 @@
           <input type="month" id="mese-riepilogo"/>
         </label>
         <button id="btn-pdf-mensile" class="secondary">Esporta PDF</button>
+        <button id="btn-csv-mensile" class="secondary">Esporta CSV</button>
       </div>
 
       <div id="riepilogo-risultati">
@@ -105,6 +112,7 @@
           <input type="month" id="mese-riepilogo-sett"/>
         </label>
         <button id="btn-pdf-sett" class="secondary">Esporta PDF</button>
+        <button id="btn-csv-sett" class="secondary">Esporta CSV</button>
       </div>
 
       <div id="riepilogo-sett-risultati">
@@ -133,6 +141,7 @@
           <input type="number" id="anno-tri" min="2000" step="1"/>
         </label>
         <button id="btn-pdf-tri" class="secondary">Esporta PDF</button>
+        <button id="btn-csv-tri" class="secondary">Esporta CSV</button>
       </div>
 
       <div class="table-wrap">
@@ -160,6 +169,7 @@
           <input type="number" id="anno-ann" min="2000" step="1"/>
         </label>
         <button id="btn-pdf-ann" class="secondary">Esporta PDF</button>
+        <button id="btn-csv-ann" class="secondary">Esporta CSV</button>
       </div>
 
       <div class="table-wrap">
@@ -189,14 +199,29 @@
       </div>
       <p class="hint">Il montante è la somma cumulata dei saldi mese (parte da 0 a gennaio e cresce/decresce mese per mese).</p>
     </section>
+
+    <!-- Dashboard -->
+    <section id="sezione-dashboard" class="hidden">
+      <div class="filters">
+        <label>Mese
+          <input type="month" id="mese-dashboard"/>
+        </label>
+      </div>
+      <h2>Spese per macro (mese selezionato)</h2>
+      <div class="chart-wrap">
+        <canvas id="chart-macro" width="600" height="300" aria-label="Grafico spese per macro"></canvas>
+      </div>
+      <p class="hint">Il grafico esclude il mutuo dalle spese per coerenza con la visione settimanale; lo mostra come colonna separata.</p>
+    </section>
   </main>
 
   <footer>
-    <small>Dati salvati in locale sul dispositivo (localStorage). In una fase successiva abiliteremo la sincronizzazione cloud.</small>
+    <small>Dati salvati in locale (localStorage). In una fase successiva abiliteremo la sincronizzazione cloud.</small>
   </footer>
 
   <script src="script.js"></script>
-  <!-- html2pdf for client-side PDF export -->
+  <!-- libs -->
   <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </body>
 </html>

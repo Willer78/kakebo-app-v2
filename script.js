@@ -21,6 +21,30 @@ const CATEGORIE = {
 // === Helper ===
 const $ = (sel) => document.querySelector(sel);
 const fmtMoney = (n) => `€ ${n.toFixed(2)}`;
+const download = (filename, content, type="text/csv;charset=utf-8") => {
+  const blob = new Blob([content], {type});
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  setTimeout(()=>{
+    URL.revokeObjectURL(link.href);
+    link.remove();
+  }, 0);
+};
+
+// === Theme ===
+(function initTheme(){
+  const saved = localStorage.getItem("kakebo_theme") || "light";
+  document.documentElement.setAttribute("data-theme", saved);
+  $("#theme-toggle").addEventListener("click", ()=>{
+    const cur = document.documentElement.getAttribute("data-theme");
+    const next = cur === "light" ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("kakebo_theme", next);
+  });
+})();
 
 // === Storage ===
 const KEY = "kakebo_movimenti_v1";
@@ -30,12 +54,7 @@ const salva = () => localStorage.setItem(KEY, JSON.stringify(MOVIMENTI));
 
 // === Date utils ===
 const pad = (n) => String(n).padStart(2,"0");
-const todayStr = () => {
-  const d = new Date(); 
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-};
-
-// === Date helpers (settimanale/trimestri/annuale) ===
+const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
 const parseDate = (s) => { const [Y,M,D] = s.split("-").map(Number); return new Date(Y, M-1, D); };
 const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
 const startOfMondayWeek = (d) => { const day = d.getDay(); const offset = (day === 0 ? -6 : 1 - day); return addDays(d, offset); };
@@ -59,27 +78,31 @@ const tabRiep = document.getElementById("tab-riepilogo");
 const tabSett = document.getElementById("tab-riepilogo-sett");
 const tabTri  = document.getElementById("tab-riepilogo-tri");
 const tabAnn  = document.getElementById("tab-riepilogo-ann");
+const tabDash = document.getElementById("tab-dashboard");
 
 const secIns = document.getElementById("sezione-inserimento");
 const secRiep = document.getElementById("sezione-riepilogo");
 const secSett = document.getElementById("sezione-riepilogo-sett");
 const secTri  = document.getElementById("sezione-riepilogo-tri");
 const secAnn  = document.getElementById("sezione-riepilogo-ann");
+const secDash = document.getElementById("sezione-dashboard");
 
 function switchTab(which){
-  [tabIns,tabRiep,tabSett,tabTri,tabAnn].forEach(t=>t.classList.remove("active"));
-  [secIns,secRiep,secSett,secTri,secAnn].forEach(s=>s.classList.add("hidden"));
+  [tabIns,tabRiep,tabSett,tabTri,tabAnn,tabDash].forEach(t=>t.classList.remove("active"));
+  [secIns,secRiep,secSett,secTri,secAnn,secDash].forEach(s=>s.classList.add("hidden"));
   if(which==="ins"){ tabIns.classList.add("active"); secIns.classList.remove("hidden"); }
   else if(which==="riep"){ tabRiep.classList.add("active"); secRiep.classList.remove("hidden"); aggiornaRiepilogo(); }
   else if(which==="sett"){ tabSett.classList.add("active"); secSett.classList.remove("hidden"); aggiornaRiepilogoSettimanale(); }
   else if(which==="tri"){ tabTri.classList.add("active"); secTri.classList.remove("hidden"); aggiornaRiepilogoTrimestri(); }
-  else { tabAnn.classList.add("active"); secAnn.classList.remove("hidden"); aggiornaRiepilogoAnnuale(); }
+  else if(which==="ann"){ tabAnn.classList.add("active"); secAnn.classList.remove("hidden"); aggiornaRiepilogoAnnuale(); }
+  else { tabDash.classList.add("active"); secDash.classList.remove("hidden"); aggiornaDashboard(); }
 }
 tabIns.addEventListener("click", ()=>switchTab("ins"));
 tabRiep.addEventListener("click", ()=>switchTab("riep"));
 tabSett.addEventListener("click", ()=>switchTab("sett"));
 tabTri .addEventListener("click", ()=>switchTab("tri"));
 tabAnn .addEventListener("click", ()=>switchTab("ann"));
+tabDash.addEventListener("click", ()=>switchTab("dash"));
 
 // === Form ===
 const inputData = $("#data");
@@ -91,7 +114,6 @@ const inputNota = $("#nota");
 
 inputData.value = todayStr();
 
-// Popola macro e categorie in base al tipo (Mutuo disabilitato)
 function refreshMacroETree(){
   const tipo = selTipo.value;
   selMacro.innerHTML = "";
@@ -137,15 +159,9 @@ document.getElementById("form-movimento").addEventListener("submit", (e)=>{
 
   let macro = "";
   let categoria = "";
-  if (tipo === "entrata") {
-    macro = "Entrate";
-    categoria = selCat.value || "";
-  } else if (tipo === "mutuo") {
-    macro = "Mutuo"; categoria = "—";
-  } else {
-    macro = selMacro.value || "";
-    categoria = selCat.value || "";
-  }
+  if (tipo === "entrata") { macro = "Entrate"; categoria = selCat.value || ""; }
+  else if (tipo === "mutuo") { macro = "Mutuo"; categoria = "—"; }
+  else { macro = selMacro.value || ""; categoria = selCat.value || ""; }
   const nota = (inputNota.value || "").trim();
 
   if(!data || isNaN(importo)){ alert("Controlla data e importo."); return; }
@@ -159,15 +175,10 @@ document.getElementById("form-movimento").addEventListener("submit", (e)=>{
   inputData.value = todayStr();
   e.target.reset();
   refreshMacroETree();
-  aggiornaTuttiIRiepiloghi();
+  aggiornaTutti();
 });
 
-function aggiornaTuttiIRiepiloghi(){
-  aggiornaRiepilogo();
-  aggiornaRiepilogoSettimanale();
-  aggiornaRiepilogoTrimestri();
-  aggiornaRiepilogoAnnuale();
-}
+function aggiornaTutti(){ aggiornaRiepilogo(); aggiornaRiepilogoSettimanale(); aggiornaRiepilogoTrimestri(); aggiornaRiepilogoAnnuale(); aggiornaDashboard(); }
 
 // Pulsanti extra
 document.getElementById("pulisci").addEventListener("click", ()=>{
@@ -180,7 +191,7 @@ document.getElementById("cancella-tutto").addEventListener("click", ()=>{
     MOVIMENTI = [];
     salva();
     renderTabella();
-    aggiornaTuttiIRiepiloghi();
+    aggiornaTutti();
   }
 });
 
@@ -207,7 +218,7 @@ function renderTabella(){
       MOVIMENTI = MOVIMENTI.filter(x=>x.id!==id);
       salva();
       renderTabella();
-      aggiornaTuttiIRiepiloghi();
+      aggiornaTutti();
     });
   });
 }
@@ -215,7 +226,7 @@ renderTabella();
 
 // Riepilogo mensile
 const inputMese = document.getElementById("mese-riepilogo");
-(function setDefaultMonth(){ const d=new Date(); inputMese.value=`${d.getFullYear()}-${pad(d.getMonth()+1)}`; })();
+(function(){ const d=new Date(); inputMese.value=`${d.getFullYear()}-${pad(d.getMonth()+1)}`; })();
 function aggiornaRiepilogo(){
   if(!inputMese.value) return;
   const prefix = inputMese.value; // yyyy-mm
@@ -236,9 +247,9 @@ function aggiornaRiepilogo(){
 }
 inputMese.addEventListener("change", aggiornaRiepilogo);
 
-// Riepilogo settimanale (contabile)
+// Riepilogo settimanale
 const inputMeseSett = document.getElementById("mese-riepilogo-sett");
-(function setDefaultMonthSett(){ const d=new Date(); inputMeseSett.value=`${d.getFullYear()}-${pad(d.getMonth()+1)}`; })();
+(function(){ const d=new Date(); inputMeseSett.value=`${d.getFullYear()}-${pad(d.getMonth()+1)}`; })();
 function formatRange(a,b){ const dd=(x)=>String(x).padStart(2,"0"); return `${dd(a.getDate())}/${dd(a.getMonth()+1)} – ${dd(b.getDate())}/${dd(b.getMonth()+1)}`; }
 function aggiornaRiepilogoSettimanale(){
   if(!inputMeseSett.value) return;
@@ -263,7 +274,7 @@ inputMeseSett.addEventListener("change", aggiornaRiepilogoSettimanale);
 
 // Riepilogo trimestrale
 const inputAnnoTri = document.getElementById("anno-tri");
-(function setDefaultYearTri(){ const d = new Date(); inputAnnoTri.value = d.getFullYear(); })();
+(function(){ const d = new Date(); inputAnnoTri.value = d.getFullYear(); })();
 function aggiornaRiepilogoTrimestri(){
   const year = parseInt(inputAnnoTri.value, 10); if(isNaN(year)) return;
   const tbody = document.querySelector("#tabella-riepilogo-tri tbody"); tbody.innerHTML = "";
@@ -285,7 +296,7 @@ inputAnnoTri.addEventListener("change", aggiornaRiepilogoTrimestri);
 
 // Riepilogo annuale
 const inputAnnoAnn = document.getElementById("anno-ann");
-(function setDefaultYearAnn(){ const d = new Date(); inputAnnoAnn.value = d.getFullYear(); })();
+(function(){ const d = new Date(); inputAnnoAnn.value = d.getFullYear(); })();
 function monthLabel(i){ return ["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"][i]; }
 function aggiornaRiepilogoAnnuale(){
   const year = parseInt(inputAnnoAnn.value, 10); if(isNaN(year)) return;
@@ -325,52 +336,142 @@ function exportPDF(filename, titleText, subtitleText, tableNodeOrListNode, extra
   const title = document.createElement("h2"); title.className = "pdf-title"; title.textContent = titleText;
   const sub = document.createElement("p"); sub.className = "pdf-sub"; sub.textContent = subtitleText;
   container.appendChild(title); container.appendChild(sub);
-
-  // clone nodo (tabella o lista)
   container.appendChild(tableNodeOrListNode.cloneNode(true));
-
-  if(extraFooterText){
-    const foot = document.createElement("p"); foot.className = "pdf-footer"; foot.textContent = extraFooterText;
-    container.appendChild(foot);
-  }
-
-  const opt = {
-    margin:       10,
-    filename:     filename,
-    image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2, useCORS: true },
-    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  };
+  if(extraFooterText){ const foot = document.createElement("p"); foot.className = "pdf-footer"; foot.textContent = extraFooterText; container.appendChild(foot); }
+  const opt = { margin:10, filename, image:{type:'jpeg',quality:0.98}, html2canvas:{scale:2,useCORS:true}, jsPDF:{unit:'mm',format:'a4',orientation:'portrait'} };
   html2pdf().set(opt).from(container).save();
 }
 
-// Bottoni PDF
+// === CSV EXPORT ===
+function rowsToCSV(rows){
+  return rows.map(r => r.map(v => {
+    const s = String(v ?? "");
+    if (s.includes(';') || s.includes('"') || s.includes('\n')) return '"' + s.replace(/"/g,'""') + '"';
+    return s;
+  }).join(';')).join('\n');
+}
+
+function exportMonthlyCSV(){
+  // Build from computed monthly totals
+  const ym = inputMese.value || "(mese)";
+  const prefix = ym;
+  const delmese = MOVIMENTI.filter(m => (m.data || "").startsWith(prefix));
+  const totali = {}; let entrate=0, spese=0;
+  for(const m of delmese){
+    if(m.tipo==="entrata") entrate+=m.importo;
+    else if(m.tipo==="mutuo"){ spese+=m.importo; totali["Mutuo"]=(totali["Mutuo"]||0)+m.importo; }
+    else { spese+=m.importo; const key=m.macro||"Altro"; totali[key]=(totali[key]||0)+m.importo; }
+  }
+  const order=["Sopravvivenza","Optional","Cultura","Extra","Mutuo","Altro"];
+  const rows=[["Macro","Importo (€)"]];
+  for(const k of order){ if(totali[k]>0) rows.push([k, totali[k].toFixed(2)]); }
+  rows.push([]); rows.push(["Entrate", entrate.toFixed(2)]); rows.push(["Spese", spese.toFixed(2)]); rows.push(["Saldo", (entrate-spese).toFixed(2)]);
+  download(`Kakebo_Mensile_${ym}.csv`, rowsToCSV(rows));
+}
+
+function exportWeeklyCSV(){
+  const ym = inputMeseSett.value || "(mese)";
+  const [Y,M]=ym.split("-").map(Number);
+  const { startMonday, endExclusiveMonday } = contabileMonthBounds(Y,M);
+  const rows=[["Settimana","Entrate","Spese (no mutuo)","Saldo"]];
+  for(let cur=new Date(startMonday); cur<endExclusiveMonday; cur=addDays(cur,7)){
+    const weekStart=new Date(cur), weekEnd=endOfSundayWeek(weekStart);
+    let entrate=0, speseSenzaMutuo=0;
+    for(const m of MOVIMENTI){
+      if(!m.data) continue; const d=parseDate(m.data);
+      if(d>=weekStart && d<=weekEnd){ if(m.tipo==="entrata") entrate+=m.importo; else if(m.tipo==="spesa") speseSenzaMutuo+=m.importo; }
+    }
+    rows.push([`${weekStart.toLocaleDateString()}–${weekEnd.toLocaleDateString()}`, entrate.toFixed(2), speseSenzaMutuo.toFixed(2), (entrate-speseSenzaMutuo).toFixed(2)]);
+  }
+  download(`Kakebo_Settimanale_${ym}.csv`, rowsToCSV(rows));
+}
+
+function exportQuarterlyCSV(){
+  const y = document.getElementById("anno-tri").value || "(anno)";
+  const rows=[["Trimestre","Periodo","Entrate","Spese (incl. mutuo)","Mutuo","Saldo"]];
+  for(let q=1;q<=4;q++){
+    const {start,end}=quarterRange(parseInt(y,10),q);
+    let entrate=0, spese=0, mutuo=0;
+    for(const m of MOVIMENTI){
+      if(!m.data) continue; const d=parseDate(m.data);
+      if(d>=start && d<=end){ if(m.tipo==="entrata") entrate+=m.importo; else if(m.tipo==="mutuo"){ spese+=m.importo; mutuo+=m.importo; } else spese+=m.importo; }
+    }
+    rows.push([`Q${q}`, `${start.toLocaleDateString()}–${end.toLocaleDateString()}`, entrate.toFixed(2), spese.toFixed(2), mutuo.toFixed(2), (entrate-spese).toFixed(2)]);
+  }
+  download(`Kakebo_Trimestrale_${y}.csv`, rowsToCSV(rows));
+}
+
+function exportAnnualCSV(){
+  const y = document.getElementById("anno-ann").value || "(anno)";
+  const rows=[["Mese","Entrate","Spese (incl. mutuo)","Mutuo","Saldo mese","Montante"]];
+  let montante=0;
+  for(let m=0;m<12;m++){
+    const start=new Date(parseInt(y,10),m,1);
+    const end=new Date(parseInt(y,10),m+1,0);
+    let entrate=0,spese=0,mutuo=0;
+    for(const mov of MOVIMENTI){
+      if(!mov.data) continue; const d=parseDate(mov.data);
+      if(d>=start && d<=end){ if(mov.tipo==="entrata") entrate+=mov.importo; else if(mov.tipo==="mutuo"){spese+=mov.importo;mutuo+=mov.importo;} else spese+=mov.importo; }
+    }
+    const saldo=entrate-spese; montante+=saldo;
+    rows.push([[ "Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic" ][m], entrate.toFixed(2), spese.toFixed(2), mutuo.toFixed(2), saldo.toFixed(2), montante.toFixed(2)]);
+  }
+  download(`Kakebo_Annuale_${y}.csv`, rowsToCSV(rows));
+}
+
+// Bind PDF buttons
 document.getElementById("btn-pdf-mensile").addEventListener("click", ()=>{
   aggiornaRiepilogo();
   const ym = inputMese.value || "(mese)";
   const ul = document.getElementById("totali-macro");
-  // includiamo anche il saldo come footer
   const saldoTxt = document.getElementById("saldo-mese").textContent;
   exportPDF(`Kakebo_Mensile_${ym}.pdf`, "Kakebo – Riepilogo mensile", `Mese: ${ym}`, ul, saldoTxt);
 });
-
 document.getElementById("btn-pdf-sett").addEventListener("click", ()=>{
   aggiornaRiepilogoSettimanale();
   const ym = inputMeseSett.value || "(mese)";
   const tbl = document.getElementById("tabella-riepilogo-sett");
   exportPDF(`Kakebo_Settimanale_${ym}.pdf`, "Kakebo – Riepilogo settimanale", `Mese contabile: ${ym}`, tbl, "Nota: il mutuo è escluso dai totali settimanali.");
 });
-
 document.getElementById("btn-pdf-tri").addEventListener("click", ()=>{
   aggiornaRiepilogoTrimestri();
   const y = document.getElementById("anno-tri").value || "(anno)";
   const tbl = document.getElementById("tabella-riepilogo-tri");
   exportPDF(`Kakebo_Trimestrale_${y}.pdf`, "Kakebo – Riepilogo trimestrale", `Anno: ${y}`, tbl, "Il mutuo è incluso nelle spese e mostrato separatamente.");
 });
-
 document.getElementById("btn-pdf-ann").addEventListener("click", ()=>{
   aggiornaRiepilogoAnnuale();
   const y = document.getElementById("anno-ann").value || "(anno)";
   const tbl = document.getElementById("tabella-riepilogo-ann");
   exportPDF(`Kakebo_Annuale_${y}.pdf`, "Kakebo – Riepilogo annuale", `Anno: ${y}`, tbl, "Il montante è la somma cumulata dei saldi mese.");
 });
+
+// Bind CSV buttons
+document.getElementById("btn-csv-mensile").addEventListener("click", exportMonthlyCSV);
+document.getElementById("btn-csv-sett").addEventListener("click", exportWeeklyCSV);
+document.getElementById("btn-csv-tri").addEventListener("click", exportQuarterlyCSV);
+document.getElementById("btn-csv-ann").addEventListener("click", exportAnnualCSV);
+
+// === Dashboard (Chart.js) ===
+let chart;
+const inputMeseDash = document.getElementById("mese-dashboard");
+(function(){ const d=new Date(); inputMeseDash.value=`${d.getFullYear()}-${pad(d.getMonth()+1)}`; })();
+function aggiornaDashboard(){
+  if(!inputMeseDash.value) return;
+  const prefix = inputMeseDash.value;
+  const delmese = MOVIMENTI.filter(m => (m.data || "").startsWith(prefix));
+  const keys = ["Sopravvivenza","Optional","Cultura","Extra","Mutuo"];
+  const values = {Sopravvivenza:0,Optional:0,Cultura:0,Extra:0,Mutuo:0};
+  for(const m of delmese){
+    if(m.tipo==="spesa"){ values[m.macro||"Altro"] = (values[m.macro||"Altro"]||0) + m.importo; }
+    else if(m.tipo==="mutuo"){ values["Mutuo"] += m.importo; }
+  }
+  const ctx = document.getElementById("chart-macro").getContext("2d");
+  if(chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type: "bar",
+    data: { labels: keys, datasets: [{ label: "Spese per macro (€)", data: keys.map(k=>values[k]||0) }] },
+    options: { responsive: true, scales: { y: { beginAtZero: true } } }
+  });
+}
+inputMeseDash.addEventListener("change", aggiornaDashboard);
