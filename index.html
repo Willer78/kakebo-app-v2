@@ -14,6 +14,7 @@
       <button id="tab-riepilogo" class="tab">Riepilogo mensile</button>
       <button id="tab-riepilogo-sett" class="tab">Riepilogo settimanale</button>
       <button id="tab-riepilogo-tri" class="tab">Riepilogo trimestrale</button>
+      <button id="tab-riepilogo-ann" class="tab">Riepilogo annuale</button>
     </nav>
   </header>
 
@@ -147,6 +148,42 @@
         </table>
       </div>
       <p class="hint">Nel riepilogo trimestrale il mutuo è conteggiato nelle spese complessive e mostrato anche come voce separata.</p>
+    </section>
+
+    <!-- Riepilogo annuale -->
+    <section id="sezione-riepilogo-ann" class="hidden">
+      <div class="filters">
+        <label>Anno
+          <input type="number" id="anno-ann" min="2000" step="1"/>
+        </label>
+      </div>
+
+      <div class="table-wrap">
+        <table id="tabella-riepilogo-ann">
+          <thead>
+            <tr>
+              <th>Mese</th>
+              <th>Entrate</th>
+              <th>Spese (incl. mutuo)</th>
+              <th>Mutuo</th>
+              <th>Saldo mese</th>
+              <th>Montante</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+          <tfoot>
+            <tr>
+              <th>Totale anno</th>
+              <th id="ann-tot-entrate">—</th>
+              <th id="ann-tot-spese">—</th>
+              <th id="ann-tot-mutuo">—</th>
+              <th id="ann-tot-saldo">—</th>
+              <th id="ann-tot-montante">—</th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <p class="hint">Il montante è la somma cumulata dei saldi mese (parte da 0 a gennaio e cresce/decresce mese per mese).</p>
     </section>
   </main>
 

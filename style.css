@@ -39,4 +39,14 @@ footer{padding:16px 20px;color:#555}
 #tabella-riepilogo-tri td:nth-child(3),
 #tabella-riepilogo-tri td:nth-child(4),
 #tabella-riepilogo-tri td:nth-child(5),
-#tabella-riepilogo-tri td:nth-child(6){text-align:right}
+#tabella-riepilogo-tri td:nth-child(6),
+#tabella-riepilogo-ann th:nth-child(2),
+#tabella-riepilogo-ann th:nth-child(3),
+#tabella-riepilogo-ann th:nth-child(4),
+#tabella-riepilogo-ann th:nth-child(5),
+#tabella-riepilogo-ann th:nth-child(6),
+#tabella-riepilogo-ann td:nth-child(2),
+#tabella-riepilogo-ann td:nth-child(3),
+#tabella-riepilogo-ann td:nth-child(4),
+#tabella-riepilogo-ann td:nth-child(5),
+#tabella-riepilogo-ann td:nth-child(6){text-align:right}

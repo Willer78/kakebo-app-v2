@@ -1,10 +1,11 @@
-# Kakebo App v3.3
+# Kakebo App v3.4
 - Inserimento movimenti con tipo (spesa/entrata/mutuo), macro, sotto-categoria, nota
-- **Fix Mutuo**: per il tipo Mutuo macro e sotto-categoria sono disabilitati e non richiesti (in tabella: macro="Mutuo", categoria="—")
+- **Fix Mutuo**: macro/sotto-categoria disabilitati per il tipo Mutuo (in tabella: macro="Mutuo", categoria="—")
 - Lista movimenti (elimina riga)
-- **Riepilogo mensile** per macro + saldo (mutuo separato nelle spese mensili)
-- **Riepilogo settimanale "contabile"** (lun–dom) con regola: se il mese finisce gio–dom la settimana resta al mese; se finisce lun–mer, slitta al mese successivo. Il mutuo è escluso dai totali settimanali.
-- **Nuovo: Riepilogo trimestrale** (Q1..Q4) con Entrate, Spese (incl. mutuo), Mutuo (separato), Saldo
+- **Riepilogo mensile** per macro + saldo
+- **Riepilogo settimanale "contabile"** (mutuo escluso dai totali settimanali)
+- **Riepilogo trimestrale** (Q1..Q4) con Entrate, Spese (incl. mutuo), Mutuo, Saldo
+- **Nuovo: Riepilogo annuale** con dettagli mensili e colonna **Montante** (saldo cumulato mese per mese)
 - Salvataggio su localStorage
 
 ## Deploy su Vercel
