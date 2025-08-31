@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-  <title>Kakebo App v3.9.0 – Print/PDF</title>
+  <title>Kakebo App v3.9.2 – Filtri & Ricorrenti</title>
   <meta name="theme-color" content="#2563eb"/>
   <style>
   :root{
@@ -37,6 +37,7 @@
   th,td{padding:10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;background:var(--card)}
   .table-wrap{overflow:auto;-webkit-overflow-scrolling:touch;max-height:60vh;border:1px solid var(--border);border-radius:12px}
   thead th{position:sticky; top:0; z-index:1; background:var(--card)}
+  tfoot th, tfoot td{font-weight:bold; background:#f3f4f6}
   #theme-toggle{padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--fg);cursor:pointer}
   .section-title{margin:8px 0 12px 0}
   .legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;justify-content:center}
@@ -47,29 +48,12 @@
   .landscape-tip{display:none;margin-bottom:8px;color:var(--muted)}
   @media (orientation:portrait){ .landscape-tip{display:block} }
   @media (max-width:360px){ .btn{font-size:13px; padding:8px 10px; min-height:36px} }
-
-  /* ===== Print Styles ===== */
-  @media print {
-    :root{ --bg:#fff; --fg:#000; --card:#fff; --border:#ddd }
-    body{ background:#fff; color:#000 }
-    header, footer, .no-print { display:none !important; }
-    main{ padding:0 }
-    .page{ display:block !important; min-height:auto; overflow:visible }
-    .card{ border:0; padding:0 }
-    .toolbar{ display:none }
-    .table-wrap{ max-height:none; overflow:visible; border:0 }
-    thead th{ position:sticky; top:auto }
-    /* Show only the printing page */
-    .page{ display:none }
-    .page.printing{ display:block }
-    h2.section-title{ margin:0 0 8px 0 }
-    .muted{ color:#444 }
-  }
+  .muted{color:var(--muted)}
   </style>
 </head>
 <body>
   <header class="no-print">
-    <h1>Kakebo – v3.9.0</h1>
+    <h1>Kakebo – v3.9.2</h1>
     <button id="theme-toggle" title="Tema">🌙/☀️</button>
   </header>
 
@@ -86,6 +70,8 @@
       </div>
       <div style="height:12px"></div>
       <button class="btn btn-slate" data-goto="page-movimenti" style="width:100%">📄 Movimenti</button>
+      <div style="height:12px"></div>
+      <button class="btn" data-goto="page-range">🔎 Riepilogo intervallo</button>
     </section>
 
     <!-- INSERIMENTO: SCELTA -->
@@ -109,7 +95,7 @@
         </div>
       </div>
       <div style="height:12px"></div>
-      <button class="btn no-print" onclick="goto('page-home')">⬅️ Torna a Home</button>
+      <button class="btn" onclick="goto('page-home')">⬅️ Torna a Home</button>
     </section>
 
     <!-- FORM UNICO -->
@@ -136,11 +122,18 @@
           <label id="wrap-categoria">Sotto-categoria
             <select id="categoria" required></select>
           </label>
+          <label>Tag (opzionale)
+            <input type="text" id="tag" maxlength="60" placeholder="es. lavoro, vacanze, auto"/>
+          </label>
+          <label class="row" style="align-items:center">
+            <input type="checkbox" id="ricorrente" style="width:auto; height:auto; margin-right:8px"/>
+            <span>Ricorrente mensile (stesso giorno ogni mese)</span>
+          </label>
           <label>Nota
             <input type="text" id="nota" maxlength="120" placeholder="es. pranzo lavoro, regalo, bolletta…"/>
           </label>
         </div>
-        <div class="toolbar no-print">
+        <div class="toolbar">
           <button class="btn btn-accent" type="submit">✅ Salva</button>
           <button class="btn" type="button" id="pulisci">🧹 Pulisci</button>
           <button class="btn" type="button" onclick="goto('page-insert-chooser')">⬅️ Indietro</button>
@@ -153,20 +146,39 @@
       <h2 class="section-title">Movimenti</h2>
       <div class="card">
         <p class="landscape-tip">Suggerimento: per vedere più colonne, ruota il telefono in orizzontale.</p>
-        <div class="toolbar no-print">
+        <div class="toolbar">
           <button class="btn" onclick="goto('page-home')">⬅️ Home</button>
           <button class="btn btn-accent" onclick="goto('page-insert-chooser')">➕ Nuovo</button>
           <button class="btn" id="export-movimenti">⬇️ Esporta CSV</button>
-          <button class="btn" id="print-movimenti">🖨️ Stampa / PDF</button>
           <button class="btn" id="backup-json">💾 Esporta JSON</button>
           <input type="file" id="import-json-input" accept="application/json" class="hidden"/>
           <button class="btn" id="import-json">📥 Importa JSON</button>
           <button class="btn btn-slate" id="cancella-tutto">🗑️ Svuota archivio</button>
         </div>
+        <div class="toolbar">
+          <label>Macro
+            <select id="f-macro"><option value="">Tutte</option></select>
+          </label>
+          <label>Categoria
+            <select id="f-cat"><option value="">Tutte</option></select>
+          </label>
+          <label>Tipo
+            <select id="f-tipo">
+              <option value="">Tutti</option>
+              <option value="spesa">Spesa</option>
+              <option value="entrata">Entrata</option>
+              <option value="mutuo">Mutuo</option>
+            </select>
+          </label>
+          <label>Tag contiene
+            <input type="text" id="f-tag" placeholder="testo libero"/>
+          </label>
+        </div>
         <div class="table-wrap">
           <table id="tabella-movimenti">
-            <thead><tr><th>Data</th><th>Tipo</th><th>Macro</th><th>Categoria</th><th>Importo</th><th>Nota</th><th></th></tr></thead>
+            <thead><tr><th>Data</th><th>Tipo</th><th>Macro</th><th>Categoria</th><th>Importo</th><th>Tag</th><th>Nota</th><th></th></tr></thead>
             <tbody></tbody>
+            <tfoot><tr><th colspan="4">Totale visibile</th><th id="totale-visibile">€ 0.00</th><th colspan="3"></th></tr></tfoot>
           </table>
         </div>
       </div>
@@ -176,14 +188,23 @@
     <section id="page-riepilogo-mese" class="page hidden">
       <h2 class="section-title">Riepilogo mensile</h2>
       <div class="card">
-        <div class="toolbar no-print">
+        <div class="toolbar">
           <label>Mese <input type="month" id="mese-riepilogo"/></label>
+          <label>Macro
+            <select id="f-macro-mese"><option value="">Tutte</option></select>
+          </label>
+          <label>Categoria
+            <select id="f-cat-mese"><option value="">Tutte</option></select>
+          </label>
           <button class="btn" id="export-mensile">⬇️ Esporta CSV</button>
-          <button class="btn" id="print-mensile">🖨️ Stampa / PDF</button>
           <button class="btn" onclick="goto('page-home')">⬅️ Home</button>
         </div>
         <h3>Totali per macro</h3>
         <ul id="totali-macro"></ul>
+        <div id="dettaglio-macro" class="hidden">
+          <h3 id="titolo-dettaglio"></h3>
+          <ul id="totali-categorie"></ul>
+        </div>
         <h3>Saldo mese (entrate – spese)</h3>
         <p id="saldo-mese">—</p>
         <p class="muted">Nota: il mutuo è escluso dai settimanali ma incluso qui come voce separata.</p>
@@ -194,10 +215,9 @@
     <section id="page-riepilogo-sett" class="page hidden">
       <h2 class="section-title">Riepilogo settimanale</h2>
       <div class="card">
-        <div class="toolbar no-print">
+        <div class="toolbar">
           <label>Mese <input type="month" id="mese-riepilogo-sett"/></label>
           <button class="btn" id="export-sett">⬇️ Esporta CSV</button>
-          <button class="btn" id="print-sett">🖨️ Stampa / PDF</button>
           <button class="btn" onclick="goto('page-home')">⬅️ Home</button>
         </div>
         <div class="table-wrap">
@@ -213,10 +233,9 @@
     <section id="page-riepilogo-tri" class="page hidden">
       <h2 class="section-title">Riepilogo trimestrale</h2>
       <div class="card">
-        <div class="toolbar no-print">
+        <div class="toolbar">
           <label>Anno <input type="number" id="anno-tri" min="2000" step="1"/></label>
           <button class="btn" id="export-tri">⬇️ Esporta CSV</button>
-          <button class="btn" id="print-tri">🖨️ Stampa / PDF</button>
           <button class="btn" onclick="goto('page-home')">⬅️ Home</button>
         </div>
         <div class="table-wrap">
@@ -232,10 +251,9 @@
     <section id="page-riepilogo-ann" class="page hidden">
       <h2 class="section-title">Riepilogo annuale</h2>
       <div class="card">
-        <div class="toolbar no-print">
+        <div class="toolbar">
           <label>Anno <input type="number" id="anno-ann" min="2000" step="1"/></label>
           <button class="btn" id="export-ann">⬇️ Esporta CSV</button>
-          <button class="btn" id="print-ann">🖨️ Stampa / PDF</button>
           <button class="btn" onclick="goto('page-home')">⬅️ Home</button>
         </div>
         <div class="table-wrap">
@@ -248,11 +266,31 @@
       </div>
     </section>
 
+    <!-- RIEPILOGO INTERVALLO -->
+    <section id="page-range" class="page hidden">
+      <h2 class="section-title">Riepilogo intervallo</h2>
+      <div class="card">
+        <div class="toolbar">
+          <label>Dal <input type="date" id="dal"/></label>
+          <label>Al <input type="date" id="al"/></label>
+          <button class="btn" id="calc-range">Calcola</button>
+          <button class="btn" id="export-range">⬇️ Esporta CSV</button>
+          <button class="btn" onclick="goto('page-home')">⬅️ Home</button>
+        </div>
+        <div class="table-wrap">
+          <table id="tabella-range">
+            <thead><tr><th>Voce</th><th>Totale</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
     <!-- DASHBOARD -->
     <section id="page-dashboard" class="page hidden">
       <h2 class="section-title">Dashboard</h2>
       <div class="card chart-box">
-        <div class="toolbar no-print">
+        <div class="toolbar">
           <label>Mese <input type="month" id="mese-dashboard"/></label>
           <button class="btn" onclick="goto('page-home')">⬅️ Home</button>
         </div>
@@ -264,7 +302,7 @@
     </section>
   </main>
 
-  <footer class="no-print"><small>v3.9.0 – build 2025-08-31 20:16:17</small></footer>
+  <footer><small>v3.9.2 – build 2025-08-31 20:28:03</small></footer>
 
   <script>
   // ===== Tema =====
@@ -280,7 +318,7 @@
   })();
 
   // ===== Navigazione =====
-  const pages = ["page-home","page-insert-chooser","page-form","page-movimenti","page-riepilogo-mese","page-riepilogo-sett","page-riepilogo-tri","page-riepilogo-ann","page-dashboard"];
+  const pages = ["page-home","page-insert-chooser","page-form","page-movimenti","page-riepilogo-mese","page-riepilogo-sett","page-riepilogo-tri","page-riepilogo-ann","page-range","page-dashboard"];
   function goto(id){
     pages.forEach(p=>document.getElementById(p).classList.add("hidden"));
     document.getElementById(id).classList.remove("hidden");
@@ -288,21 +326,6 @@
     if(id==='page-dashboard'){ resizeAndDrawChart(); }
   }
   document.querySelectorAll("[data-goto]").forEach(b=>b.addEventListener("click", ()=> goto(b.getAttribute("data-goto")) ));
-
-  // ===== Print helpers =====
-  function printSection(sectionId, title){
-    const section = document.getElementById(sectionId);
-    if(!section) return;
-    // mark printing section
-    document.querySelectorAll('.page').forEach(p=>p.classList.remove('printing'));
-    section.classList.add('printing');
-    // set temporary title for print header/footer of browser
-    const oldTitle = document.title;
-    document.title = "Kakebo – " + title;
-    window.print();
-    document.title = oldTitle;
-    section.classList.remove('printing');
-  }
 
   // ===== Dati e util =====
   const CATEGORIE = {
@@ -313,7 +336,9 @@
     Entrate:["Stipendio","Assegni familiari","Fotovoltaico","Altre entrate"]
   };
   const KEY="kakebo_movimenti_v1"; let MOVIMENTI=[]; try{ MOVIMENTI=JSON.parse(localStorage.getItem(KEY)||"[]"); }catch{ MOVIMENTI=[]; }
+  const KEY_REC="kakebo_ricorrenti_v1"; let RICORRENTI=[]; try{ RICORRENTI=JSON.parse(localStorage.getItem(KEY_REC)||"[]"); }catch{ RICORRENTI=[]; }
   const salva=()=>localStorage.setItem(KEY, JSON.stringify(MOVIMENTI));
+  const salvaRec=()=>localStorage.setItem(KEY_REC, JSON.stringify(RICORRENTI));
   const pad=n=>String(n).padStart(2,'0');
   const todayStr=()=>{const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`};
   const parseDate=s=>{const [Y,M,D]=s.split('-').map(Number); return new Date(Y,M-1,D)};
@@ -327,6 +352,22 @@
     return { startMonday, endExclusiveMonday:addDays(endSunday,1) }; }
   const fmt=n=>`€ ${Number(n||0).toFixed(2)}`;
   function safeId(){ try{ if(window.crypto && crypto.randomUUID) return crypto.randomUUID(); }catch{} return "id-"+Date.now()+"-"+Math.random().toString(16).slice(2); }
+
+  // ===== Ricorrenti: materializza quelli del mese corrente se non esistono =====
+  function ensureRicorrentiForMonth(year, month){
+    RICORRENTI.forEach(r=>{
+      const day = Math.min(r.day, new Date(year, month, 0).getDate());
+      const dateStr = `${year}-${pad(month)}-${pad(day)}`;
+      const exists = (MOVIMENTI||[]).some(m => m._rec_id===r.id && (m.data||"")===dateStr);
+      if(!exists){
+        const mov = { id:safeId(), data:dateStr, importo:Number(r.importo), tipo:r.tipo, macro:r.macro|| (r.tipo==="entrata"?"Entrate": (r.tipo==="mutuo"?"Mutuo":"")), categoria:r.categoria|| (r.tipo==="mutuo"?"—":""), tag:r.tag||"", nota:r.nota||"", updated_at:new Date().toISOString(), _rec_id:r.id };
+        MOVIMENTI.unshift(mov);
+      }
+    });
+    salva();
+  }
+  // Materializza ricorrenti del mese corrente al boot
+  (function(){ const d=new Date(); ensureRicorrentiForMonth(d.getFullYear(), d.getMonth()+1); })();
 
   // ===== Scelta Inserimento =====
   document.querySelectorAll(".choose-macro").forEach(btn=>btn.addEventListener("click",()=>{
@@ -343,6 +384,8 @@
   const selCat=document.getElementById("categoria");
   const wrapMacro=document.getElementById("wrap-macro");
   const wrapCategoria=document.getElementById("wrap-categoria");
+  const inputTag=document.getElementById("tag");
+  const inputRic=document.getElementById("ricorrente");
 
   function setMutuoVisibility(isMutuo){
     if(isMutuo){
@@ -391,35 +434,27 @@
     if(tipo==="mutuo"){ macro="Mutuo"; categoria="—"; }
     else if(tipo==="entrata"){ macro="Entrate"; categoria=selCat.value||""; if(!categoria){ alert("Seleziona la voce di entrata."); return; } }
     else { macro = selMacro.value || ""; categoria = selCat.value || ""; if(!macro || !categoria){ alert("Seleziona macro e sotto-categoria."); return; } }
+    const tag = (inputTag.value || "").trim();
     const nota = (document.getElementById("nota").value || "").trim();
-    const mov = { id:safeId(), data, importo:Number(importo), tipo, macro, categoria, nota, updated_at:new Date().toISOString() };
-    MOVIMENTI.unshift(mov); salva(); renderTabella(); goto('page-movimenti'); aggiornaTutti();
+    const mov = { id:safeId(), data, importo:Number(importo), tipo, macro, categoria, tag, nota, updated_at:new Date().toISOString() };
+    MOVIMENTI.unshift(mov); salva(); renderTabella(); aggiornaTutti(); goto('page-movimenti');
+
+    // Registra/aggiorna ricorrente
+    if(inputRic.checked){
+      const d = parseDate(data);
+      const rec = { id: mov.id+"-rec", day:d.getDate(), tipo, macro, categoria, importo:Number(importo), tag, nota };
+      // sostituisci se esiste stessa "signature" tipo+macro+categoria+importo+day
+      const idx = RICORRENTI.findIndex(r=> r.day===rec.day && r.tipo===rec.tipo && r.macro===rec.macro && r.categoria===rec.categoria && Number(r.importo)===Number(rec.importo));
+      if(idx>=0) RICORRENTI[idx]=rec; else RICORRENTI.push(rec);
+      salvaRec();
+      inputRic.checked=false;
+    }
   });
   document.getElementById("pulisci").addEventListener("click", ()=>{
     document.getElementById('form-movimento').reset(); inputData.value=todayStr();
   });
 
-  // ===== Movimenti =====
-  function renderTabella(){
-    const tbody=document.querySelector("#tabella-movimenti tbody");
-    if(!tbody) return;
-    tbody.innerHTML="";
-    (MOVIMENTI||[]).forEach(m=>{
-      const tr=document.createElement("tr");
-      tr.innerHTML = `<td>${m.data}</td><td>${m.tipo}</td><td>${m.macro||""}</td><td>${m.categoria||""}</td><td>€ ${Number(m.importo).toFixed(2)}</td><td>${m.nota||""}</td><td><button class="del" data-id="${m.id}">Elimina</button></td>`;
-      tbody.appendChild(tr);
-    });
-    tbody.querySelectorAll("button.del").forEach(btn=>btn.addEventListener("click",(ev)=>{
-      const id=ev.currentTarget.getAttribute("data-id");
-      MOVIMENTI = (MOVIMENTI||[]).filter(x=>x.id!==id);
-      salva(); renderTabella(); aggiornaTutti();
-    }));
-  }
-  document.getElementById("cancella-tutto").addEventListener("click", ()=>{
-    if(confirm("Svuotare l'archivio locale?")){ MOVIMENTI=[]; salva(); renderTabella(); aggiornaTutti(); }
-  });
-
-  // ===== CSV/JSON helpers =====
+  // ===== Helpers export =====
   function downloadFile(filename, content, mime){
     const blob = new Blob([content], {type: mime});
     const url = URL.createObjectURL(blob);
@@ -436,20 +471,71 @@
     const lines = rows.map(r=> r.map(esc).join(";") );
     return "\ufeff" + lines.join("\n"); // BOM for Excel
   }
+  function ymd(){ const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
 
-  // Export Movimenti
+  // ===== Movimenti (filtri + tabella + export) =====
+  const fMacro=document.getElementById("f-macro");
+  const fCat=document.getElementById("f-cat");
+  const fTipo=document.getElementById("f-tipo");
+  const fTag=document.getElementById("f-tag");
+  // popola macro/cat filtri
+  (function setupFilters(){
+    ["Sopravvivenza","Optional","Cultura","Extra","Entrate","Mutuo"].forEach(m=>{ const o=document.createElement("option"); o.value=m; o.textContent=m; fMacro.appendChild(o); });
+    fMacro.addEventListener("change", ()=>{
+      fCat.innerHTML = '<option value="">Tutte</option>';
+      const v=fMacro.value;
+      (CATEGORIE[v]||[]).forEach(c=>{ const o=document.createElement("option"); o.value=c; o.textContent=c; fCat.appendChild(o); });
+      renderTabella();
+    });
+    fCat.addEventListener("change", renderTabella);
+    fTipo.addEventListener("change", renderTabella);
+    fTag.addEventListener("input", ()=>{ renderTabella(); });
+  })();
+
+  function passFilter(m){
+    if(fTipo.value && m.tipo!==fTipo.value) return false;
+    if(fMacro.value){
+      if(fMacro.value==="Mutuo" && m.tipo!=="mutuo") return false;
+      if(fMacro.value==="Entrate" && m.tipo!=="entrata") return false;
+      if(fMacro.value!=="Mutuo" && fMacro.value!=="Entrate" && m.macro!==fMacro.value) return false;
+    }
+    if(fCat.value && m.categoria!==fCat.value) return false;
+    if(fTag.value && !(m.tag||"").toLowerCase().includes(fTag.value.toLowerCase())) return false;
+    return true;
+  }
+
+  function renderTabella(){
+    const tbody=document.querySelector("#tabella-movimenti tbody");
+    if(!tbody) return;
+    tbody.innerHTML="";
+    let tot=0;
+    (MOVIMENTI||[]).filter(passFilter).forEach(m=>{
+      tot += Number(m.importo)||0;
+      const tr=document.createElement("tr");
+      tr.innerHTML = `<td>${m.data}</td><td>${m.tipo}</td><td>${m.macro||""}</td><td>${m.categoria||""}</td><td>€ ${Number(m.importo).toFixed(2)}</td><td>${m.tag||""}</td><td>${m.nota||""}</td><td><button class="del" data-id="${m.id}">Elimina</button></td>`;
+      tbody.appendChild(tr);
+    });
+    document.getElementById("totale-visibile").textContent = fmt(tot);
+    tbody.querySelectorAll("button.del").forEach(btn=>btn.addEventListener("click",(ev)=>{
+      const id=ev.currentTarget.getAttribute("data-id");
+      MOVIMENTI = (MOVIMENTI||[]).filter(x=>x.id!==id);
+      salva(); renderTabella(); aggiornaTutti();
+    }));
+  }
+
+  document.getElementById("cancella-tutto").addEventListener("click", ()=>{
+    if(confirm("Svuotare l'archivio locale?")){ MOVIMENTI=[]; salva(); renderTabella(); aggiornaTutti(); }
+  });
   document.getElementById("export-movimenti").addEventListener("click", ()=>{
-    const rows = [["Data","Tipo","Macro","Categoria","Importo","Nota"]];
-    (MOVIMENTI||[]).forEach(m=> rows.push([m.data,m.tipo,m.macro||"",m.categoria||"",Number(m.importo).toFixed(2),m.nota||""]));
-    downloadFile("movimenti.csv", toCSV(rows), "text/csv;charset=utf-8");
+    const rows = [["Data","Tipo","Macro","Categoria","Importo","Tag","Nota"]];
+    (MOVIMENTI||[]).filter(passFilter).forEach(m=> rows.push([m.data,m.tipo,m.macro||"",m.categoria||"",Number(m.importo).toFixed(2),m.tag||"",m.nota||""]));
+    downloadFile(f`movimenti-{ymd()}.csv`, toCSV(rows), "text/csv;charset=utf-8");
   });
-  document.getElementById("print-movimenti").addEventListener("click", ()=> printSection('page-movimenti', 'Movimenti') );
 
-  // Backup JSON
+  // Backup/Restore JSON (unchanged)
   document.getElementById("backup-json").addEventListener("click", ()=>{
-    downloadFile("kakebo-backup.json", JSON.stringify(MOVIMENTI, null, 2), "application/json");
+    downloadFile(f`kakebo-backup-{ymd()}.json`, JSON.stringify(MOVIMENTI, null, 2), "application/json");
   });
-  // Import JSON
   document.getElementById("import-json").addEventListener("click", ()=> document.getElementById("import-json-input").click() );
   document.getElementById("import-json-input").addEventListener("change", (ev)=>{
     const file = ev.target.files[0];
@@ -469,9 +555,16 @@
     ev.target.value="";
   });
 
-  // ===== RIEPILOGO MENSILE =====
+  // ===== RIEPILOGO MENSILE (filtri macro/categoria + dettaglio) =====
   const inputMese=document.getElementById("mese-riepilogo");
-  (function(){ const d=new Date(); if(inputMese) inputMese.value=`${d.getFullYear()}-${pad(d.getMonth()+1)}`; })();
+  const fMacroMese=document.getElementById("f-macro-mese");
+  const fCatMese=document.getElementById("f-cat-mese");
+  (function(){ const d=new Date(); if(inputMese) inputMese.value=`${d.getFullYear()}-${pad(d.getMonth()+1)}`;
+    ["Sopravvivenza","Optional","Cultura","Extra","Mutuo"].forEach(m=>{ const o=document.createElement("option"); o.value=m; o.textContent=m; fMacroMese.appendChild(o); });
+    fMacroMese.addEventListener("change", ()=>{ fCatMese.innerHTML='<option value="">Tutte</option>'; (CATEGORIE[fMacroMese.value]||[]).forEach(c=>{ const o=document.createElement("option"); o.value=c; o.textContent=c; fCatMese.appendChild(o); }); aggiornaRiepilogo(); });
+    fCatMese.addEventListener("change", aggiornaRiepilogo);
+  })();
+
   function aggiornaRiepilogo(){
     if(!inputMese || !inputMese.value) return;
     const prefix=inputMese.value;
@@ -482,8 +575,32 @@
     order.forEach(k=>{ if((totali[k]||0)>0){ const li=document.createElement("li"); li.textContent=`${k}: € ${(totali[k]).toFixed(2)}`; ul.appendChild(li); printed=true; } });
     if(!printed){ const li=document.createElement("li"); li.textContent="Nessuna spesa registrata nel mese selezionato."; ul.appendChild(li); }
     const saldo=entrate-spese; document.getElementById("saldo-mese").textContent=`Entrate: € ${entrate.toFixed(2)} – Spese: € ${spese.toFixed(2)} → Saldo: € ${saldo.toFixed(2)}`;
+
+    // dettaglio macro/categoria
+    const selMacro=fMacroMese.value; const selCat=fCatMese.value;
+    const det=document.getElementById("dettaglio-macro"); const titolo=document.getElementById("titolo-dettaglio"); const ulc=document.getElementById("totali-categorie");
+    if(selMacro){
+      det.classList.remove("hidden"); titolo.textContent = selMacro + (selCat?(" – " + selCat):"");
+      ulc.innerHTML="";
+      if(selCat){
+        const somma = delmese.filter(m=> (m.macro===selMacro || (selMacro==="Mutuo" && m.tipo==="mutuo")) && m.categoria===selCat).reduce((a,b)=>a+Number(b.importo||0),0);
+        const li=document.createElement("li"); li.textContent = `${selCat}: € ${somma.toFixed(2)}`; ulc.appendChild(li);
+      } else {
+        (CATEGORIE[selMacro]||[]).forEach(c=>{
+          const somma = delmese.filter(m=> (m.macro===selMacro) && m.categoria===c).reduce((a,b)=>a+Number(b.importo||0),0);
+          if(somma>0){ const li=document.createElement("li"); li.textContent = `${c}: € ${somma.toFixed(2)}`; ulc.appendChild(li); }
+        });
+        if(selMacro==="Mutuo"){
+          const somma = delmese.filter(m=> m.tipo==="mutuo").reduce((a,b)=>a+Number(b.importo||0),0);
+          const li=document.createElement("li"); li.textContent = `Mutuo: € ${somma.toFixed(2)}`; ulc.appendChild(li);
+        }
+      }
+    } else {
+      det.classList.add("hidden");
+    }
   }
   inputMese?.addEventListener("change", aggiornaRiepilogo);
+
   document.getElementById("export-mensile").addEventListener("click", ()=>{
     const month = inputMese.value || "";
     const delmese=(MOVIMENTI||[]).filter(m=>(m.data||"").startsWith(month));
@@ -499,7 +616,6 @@
     rows.push([]); rows.push(["Entrate",entrate.toFixed(2)]); rows.push(["Spese",spese.toFixed(2)]); rows.push(["Saldo",(entrate-spese).toFixed(2)]);
     downloadFile(`riepilogo-mensile-${month}.csv`, toCSV(rows), "text/csv;charset=utf-8");
   });
-  document.getElementById("print-mensile").addEventListener("click", ()=> printSection('page-riepilogo-mese', 'Riepilogo mensile') );
 
   // ===== RIEPILOGO SETTIMANALE =====
   const inputMeseSett=document.getElementById("mese-riepilogo-sett");
@@ -531,7 +647,6 @@
     }
     downloadFile(`riepilogo-settimanale-${month}.csv`, toCSV(rows), "text/csv;charset=utf-8");
   });
-  document.getElementById("print-sett").addEventListener("click", ()=> printSection('page-riepilogo-sett', 'Riepilogo settimanale') );
 
   // ===== TRIMESTRALE =====
   const inputAnnoTri=document.getElementById("anno-tri");
@@ -555,7 +670,6 @@
     }
     downloadFile(`riepilogo-trimestrale-${year}.csv`, toCSV(rows), "text/csv;charset=utf-8");
   });
-  document.getElementById("print-tri").addEventListener("click", ()=> printSection('page-riepilogo-tri', 'Riepilogo trimestrale') );
 
   // ===== ANNUALE =====
   const inputAnnoAnn=document.getElementById("anno-ann");
@@ -587,7 +701,41 @@
     }
     downloadFile(`riepilogo-annuale-${year}.csv`, toCSV(rows), "text/csv;charset=utf-8");
   });
-  document.getElementById("print-ann").addEventListener("click", ()=> printSection('page-riepilogo-ann', 'Riepilogo annuale') );
+
+  // ===== INTERVALLO =====
+  document.getElementById("calc-range").addEventListener("click", ()=>{
+    const dal=document.getElementById("dal").value, al=document.getElementById("al").value;
+    if(!dal || !al) { alert("Imposta data DAL e AL"); return; }
+    const d1=parseDate(dal), d2=parseDate(al);
+    let entrate=0, spese=0, mutuo=0;
+    (MOVIMENTI||[]).forEach(m=>{
+      if(!m.data) return; const d=parseDate(m.data);
+      if(d>=d1 && d<=d2){
+        if(m.tipo==="entrata") entrate+=Number(m.importo);
+        else if(m.tipo==="mutuo"){ spese+=Number(m.importo); mutuo+=Number(m.importo); }
+        else spese+=Number(m.importo);
+      }
+    });
+    const tbody=document.querySelector("#tabella-range tbody"); tbody.innerHTML="";
+    [["Entrate",entrate],["Spese",spese],["Mutuo (incluso nelle spese)",mutuo],["Saldo",entrate-spese]].forEach(r=>{
+      const tr=document.createElement("tr"); tr.innerHTML=`<td>${r[0]}</td><td>${fmt(r[1])}</td>`; tbody.appendChild(tr);
+    });
+  });
+  document.getElementById("export-range").addEventListener("click", ()=>{
+    const dal=document.getElementById("dal").value, al=document.getElementById("al").value;
+    if(!dal || !al) { alert("Imposta data DAL e AL"); return; }
+    let entrate=0, spese=0, mutuo=0;
+    (MOVIMENTI||[]).forEach(m=>{
+      if(!m.data) return; const d=parseDate(m.data);
+      if(d>=parseDate(dal) && d<=parseDate(al)){
+        if(m.tipo==="entrata") entrate+=Number(m.importo);
+        else if(m.tipo==="mutuo"){ spese+=Number(m.importo); mutuo+=Number(m.importo); }
+        else spese+=Number(m.importo);
+      }
+    });
+    const rows=[["Intervallo", f`${dal}..${al}`],[],["Voce","Totale"],["Entrate",entrate.toFixed(2)],["Spese",spese.toFixed(2)],["Mutuo (incluso)",mutuo.toFixed(2)],["Saldo",(entrate-spese).toFixed(2)]];
+    downloadFile(f`riepilogo-intervallo-{dal}_to_{al}.csv`, toCSV(rows), "text/csv;charset=utf-8");
+  });
 
   // ===== DASHBOARD (torta, responsive, senza mutuo) =====
   const inputMeseDash=document.getElementById("mese-dashboard");
@@ -649,11 +797,8 @@
 
   // ===== Boot =====
   function aggiornaTutti(){ aggiornaRiepilogo(); aggiornaRiepilogoSettimanale(); aggiornaRiepilogoTrimestri(); aggiornaRiepilogoAnnuale(); aggiornaDashboard(); renderTabella(); }
+  // default months/years set earlier; render now
   goto('page-home'); aggiornaTutti();
-
-  // Attach print buttons
-  document.getElementById("print-tri").addEventListener("click", ()=> printSection('page-riepilogo-tri','Riepilogo trimestrale') );
-  document.getElementById("print-ann").addEventListener("click", ()=> printSection('page-riepilogo-ann','Riepilogo annuale') );
   </script>
 </body>
 </html>
