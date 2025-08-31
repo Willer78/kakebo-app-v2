@@ -1,1 +1,515 @@
-<!DOCTYPE html><html><body><h1>v3.8.8.1 – Mobile Fix Placeholder</h1></body></html>
+<!DOCTYPE html>
+<html lang="it" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>Kakebo App v3.8.8.1 – Mobile Fix</title>
+  <meta name="theme-color" content="#2563eb"/>
+  <style>
+  :root{
+    --bg:#f7f7fb;--fg:#222;--muted:#6b7280;--card:#ffffff;--border:#e5e7eb;--accent:#2563eb;
+    --blue:#60a5fa;--green:#34d399;--yellow:#fbbf24;--red:#f87171;--purple:#a78bfa;--slate:#64748b
+  }
+  [data-theme='dark']{--bg:#0f172a;--fg:#e5e7eb;--muted:#94a3b8;--card:#111827;--border:#1f2937;--accent:#60a5fa}
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{font-family:Inter,system-ui,Arial,sans-serif;background:var(--bg);color:var(--fg);}
+  header{background:#1f2937;color:#fff;padding:12px 16px;position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  h1{margin:0;font-size:18px}
+  main{padding:16px;padding-bottom:24px}
+  footer{padding:12px 16px;color:var(--muted)}
+  .hidden{display:none}
+  .page{min-height:calc(100dvh - 120px); /* header+footer approx */ overflow:auto}
+  .menu-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px}
+  .btn{display:flex;align-items:center;justify-content:center;gap:10px;border:0;border-radius:16px;padding:18px 14px;font-size:16px;cursor:pointer;color:#111;min-height:64px}
+  .btn:active{transform:translateY(1px)}
+  .btn-blue{background:var(--blue)} .btn-green{background:var(--green)} .btn-yellow{background:var(--yellow)} .btn-red{background:var(--red)}
+  .btn-purple{background:var(--purple)} .btn-slate{background:var(--slate); color:#fff}
+  .btn-accent{background:var(--accent); color:#fff}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+  label{display:flex;flex-direction:column;font-size:14px;gap:6px}
+  input,select,button{font-size:14px}
+  input,select{padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+  .table-wrap{overflow:auto;-webkit-overflow-scrolling:touch}
+  #theme-toggle{padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--fg);cursor:pointer}
+  .section-title{margin:8px 0 12px 0}
+  .legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;justify-content:center}
+  .legend-item{display:flex;align-items:center;gap:6px}
+  .dot{width:10px;height:10px;border-radius:50%}
+  /* Dashboard centering */
+  .chart-box{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+  canvas{max-width:100%;height:auto;display:block}
+  /* Landscape tip for Movimenti (only portrait) */
+  .landscape-tip{display:none;margin-bottom:8px;color:var(--muted)}
+  @media (orientation:portrait){
+    .landscape-tip{display:block}
+  }
+  /* Avoid button overflow on very small devices */
+  @media (max-width:360px){
+    .btn{font-size:14px; padding:14px 12px; min-height:56px}
+  }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Kakebo – v3.8.8.1</h1>
+    <button id="theme-toggle" title="Tema">🌙/☀️</button>
+  </header>
+
+  <main>
+    <!-- HOME -->
+    <section id="page-home" class="page">
+      <div class="menu-grid">
+        <button class="btn btn-accent" data-goto="page-insert-chooser">📝 Inserisci movimenti</button>
+        <button class="btn btn-blue" data-goto="page-riepilogo-mese">📅 Riepilogo mensile</button>
+        <button class="btn btn-green" data-goto="page-riepilogo-sett">🗓️ Riepilogo settimanale</button>
+        <button class="btn btn-yellow" data-goto="page-riepilogo-tri">📊 Riepilogo trimestrale</button>
+        <button class="btn btn-red" data-goto="page-riepilogo-ann">📈 Riepilogo annuale</button>
+        <button class="btn btn-purple" data-goto="page-dashboard">🍰 Dashboard</button>
+      </div>
+      <div style="height:12px"></div>
+      <button class="btn btn-slate" data-goto="page-movimenti" style="width:100%">📄 Movimenti</button>
+    </section>
+
+    <!-- INSERIMENTO: SCELTA -->
+    <section id="page-insert-chooser" class="page hidden">
+      <h2 class="section-title">Inserimenti</h2>
+      <div class="card">
+        <h3>Spese (scegli una macro)</h3>
+        <div class="menu-grid">
+          <button class="btn btn-blue choose-macro" data-macro="Sopravvivenza">🍞 Sopravvivenza</button>
+          <button class="btn btn-green choose-macro" data-macro="Optional">🎟️ Optional</button>
+          <button class="btn btn-yellow choose-macro" data-macro="Cultura">📚 Cultura</button>
+          <button class="btn btn-red choose-macro" data-macro="Extra">✈️ Extra</button>
+        </div>
+      </div>
+      <div style="height:12px"></div>
+      <div class="card">
+        <h3>Altri movimenti</h3>
+        <div class="row">
+          <button class="btn btn-purple choose-entrata">💶 Entrate</button>
+          <button class="btn btn-slate choose-mutuo">🏠 Mutuo</button>
+        </div>
+      </div>
+      <div style="height:12px"></div>
+      <button class="btn" onclick="goto('page-home')">⬅️ Torna a Home</button>
+    </section>
+
+    <!-- FORM UNICO -->
+    <section id="page-form" class="page hidden">
+      <h2 class="section-title" id="form-title">Nuovo movimento</h2>
+      <form id="form-movimento" autocomplete="off" class="card">
+        <div class="grid">
+          <label>Data
+            <input type="date" id="data" required/>
+          </label>
+          <label>Importo (€)
+            <input type="number" id="importo" min="0" step="0.01" required/>
+          </label>
+          <label>Tipo
+            <select id="tipo" required>
+              <option value="spesa">Spesa</option>
+              <option value="entrata">Entrata</option>
+              <option value="mutuo">Mutuo</option>
+            </select>
+          </label>
+          <label id="wrap-macro">Macro area
+            <select id="macro" required></select>
+          </label>
+          <label id="wrap-categoria">Sotto-categoria
+            <select id="categoria" required></select>
+          </label>
+          <label>Nota
+            <input type="text" id="nota" maxlength="120" placeholder="es. pranzo lavoro, regalo, bolletta…"/>
+          </label>
+        </div>
+        <div class="toolbar">
+          <button class="btn btn-accent" type="submit">✅ Salva</button>
+          <button class="btn" type="button" id="pulisci">🧹 Pulisci</button>
+          <button class="btn" type="button" onclick="goto('page-insert-chooser')">⬅️ Indietro</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- MOVIMENTI -->
+    <section id="page-movimenti" class="page hidden">
+      <h2 class="section-title">Movimenti</h2>
+      <div class="card">
+        <p class="landscape-tip">Suggerimento: per vedere più colonne, ruota il telefono in orizzontale.</p>
+        <div class="toolbar">
+          <button class="btn" onclick="goto('page-home')">⬅️ Home</button>
+          <button class="btn btn-accent" onclick="goto('page-insert-chooser')">➕ Nuovo</button>
+          <button class="btn btn-slate" id="cancella-tutto">🗑️ Svuota archivio</button>
+        </div>
+        <div class="table-wrap">
+          <table id="tabella-movimenti">
+            <thead><tr><th>Data</th><th>Tipo</th><th>Macro</th><th>Categoria</th><th>Importo</th><th>Nota</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIEPILOGO MENSILE -->
+    <section id="page-riepilogo-mese" class="page hidden">
+      <h2 class="section-title">Riepilogo mensile</h2>
+      <div class="card">
+        <div class="toolbar">
+          <label>Mese <input type="month" id="mese-riepilogo"/></label>
+          <button class="btn" onclick="goto('page-home')">⬅️ Home</button>
+        </div>
+        <h3>Totali per macro</h3>
+        <ul id="totali-macro"></ul>
+        <h3>Saldo mese (entrate – spese)</h3>
+        <p id="saldo-mese">—</p>
+        <p class="muted">Nota: il mutuo è escluso dai settimanali ma incluso qui come voce separata.</p>
+      </div>
+    </section>
+
+    <!-- RIEPILOGO SETTIMANALE -->
+    <section id="page-riepilogo-sett" class="page hidden">
+      <h2 class="section-title">Riepilogo settimanale</h2>
+      <div class="card">
+        <div class="toolbar">
+          <label>Mese <input type="month" id="mese-riepilogo-sett"/></label>
+          <button class="btn" onclick="goto('page-home')">⬅️ Home</button>
+        </div>
+        <div class="table-wrap">
+          <table id="tabella-riepilogo-sett">
+            <thead><tr><th>Settimana</th><th>Entrate</th><th>Spese (no mutuo)</th><th>Saldo</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIEPILOGO TRIMESTRALE -->
+    <section id="page-riepilogo-tri" class="page hidden">
+      <h2 class="section-title">Riepilogo trimestrale</h2>
+      <div class="card">
+        <div class="toolbar">
+          <label>Anno <input type="number" id="anno-tri" min="2000" step="1"/></label>
+          <button class="btn" onclick="goto('page-home')">⬅️ Home</button>
+        </div>
+        <div class="table-wrap">
+          <table id="tabella-riepilogo-tri">
+            <thead><tr><th>Trimestre</th><th>Periodo</th><th>Entrate</th><th>Spese</th><th>Mutuo</th><th>Saldo</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIEPILOGO ANNUALE -->
+    <section id="page-riepilogo-ann" class="page hidden">
+      <h2 class="section-title">Riepilogo annuale</h2>
+      <div class="card">
+        <div class="toolbar">
+          <label>Anno <input type="number" id="anno-ann" min="2000" step="1"/></label>
+          <button class="btn" onclick="goto('page-home')">⬅️ Home</button>
+        </div>
+        <div class="table-wrap">
+          <table id="tabella-riepilogo-ann">
+            <thead><tr><th>Mese</th><th>Entrate</th><th>Spese</th><th>Mutuo</th><th>Saldo</th><th>Montante</th></tr></thead>
+            <tbody></tbody>
+            <tfoot><tr><th>Totale anno</th><th id="ann-tot-entrate">—</th><th id="ann-tot-spese">—</th><th id="ann-tot-mutuo">—</th><th id="ann-tot-saldo">—</th><th id="ann-tot-montante">—</th></tr></tfoot>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- DASHBOARD -->
+    <section id="page-dashboard" class="page hidden">
+      <h2 class="section-title">Dashboard</h2>
+      <div class="card chart-box">
+        <div class="toolbar">
+          <label>Mese <input type="month" id="mese-dashboard"/></label>
+          <button class="btn" onclick="goto('page-home')">⬅️ Home</button>
+        </div>
+        <div style="width:100%;max-width:520px">
+          <canvas id="chart" aria-label="Torta spese per macro (no mutuo)"></canvas>
+        </div>
+        <div class="legend" id="legend"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer><small>v3.8.8.1 – build 2025-08-31 19:59:12</small></footer>
+
+  <script>
+  // ===== Tema =====
+  (function(){
+    const saved = localStorage.getItem("kakebo_theme") || "light";
+    document.documentElement.setAttribute("data-theme", saved);
+    document.getElementById("theme-toggle").addEventListener("click", ()=>{
+      const cur=document.documentElement.getAttribute("data-theme");
+      const next=cur==="light"?"dark":"light";
+      document.documentElement.setAttribute("data-theme", next);
+      localStorage.setItem("kakebo_theme", next);
+    });
+  })();
+
+  // ===== Navigazione =====
+  const pages = ["page-home","page-insert-chooser","page-form","page-movimenti","page-riepilogo-mese","page-riepilogo-sett","page-riepilogo-tri","page-riepilogo-ann","page-dashboard"];
+  function goto(id){
+    pages.forEach(p=>document.getElementById(p).classList.add("hidden"));
+    document.getElementById(id).classList.remove("hidden");
+    window.scrollTo({top:0, behavior:"instant"});
+    if(id==='page-dashboard'){ resizeAndDrawChart(); }
+  }
+  document.querySelectorAll("[data-goto]").forEach(b=>b.addEventListener("click", ()=> goto(b.getAttribute("data-goto")) ));
+
+  // ===== Dati e util =====
+  const CATEGORIE = {
+    Sopravvivenza:["Alimentazione","Farmacia","Cane","Telefono fisso","Acqua","Gas","Elettricità","Auto","Moto"],
+    Optional:["Ristorante","Spese di casa","Cosmesi/ capelli","Shopping","Sport","Cellulare"],
+    Cultura:["Libri","Musica","Scuola Eva","Scuola Elena"],
+    Extra:["Viaggi","Regali","Spese casa grandi"],
+    Entrate:["Stipendio","Assegni familiari","Fotovoltaico","Altre entrate"]
+  };
+  const KEY="kakebo_movimenti_v1"; let MOVIMENTI=[]; try{ MOVIMENTI=JSON.parse(localStorage.getItem(KEY)||"[]"); }catch{ MOVIMENTI=[]; }
+  const salva=()=>localStorage.setItem(KEY, JSON.stringify(MOVIMENTI));
+  const pad=n=>String(n).padStart(2,'0');
+  const todayStr=()=>{const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`};
+  const parseDate=s=>{const [Y,M,D]=s.split('-').map(Number); return new Date(Y,M-1,D)};
+  const addDays=(d,n)=>{const x=new Date(d); x.setDate(x.getDate()+n); return x};
+  const startOfMondayWeek=d=>{const day=d.getDay(); const offset=(day===0?-6:1-day); return addDays(d,offset)};
+  const endOfSundayWeek=d=> addDays(startOfMondayWeek(d),6);
+  function contabileMonthBounds(year,month){const first=new Date(year,month-1,1); const last=new Date(year,month,0);
+    const prevLast=new Date(year,month-1,0); const prevLastDow=prevLast.getDay();
+    const startMonday=(prevLastDow>=1 && prevLastDow<=3) ? startOfMondayWeek(prevLast) : startOfMondayWeek(first);
+    const lastDow=last.getDay(); const endSunday=(lastDow===4 || lastDow===5 || lastDow===6 || lastDow===0) ? endOfSundayWeek(last) : addDays(startOfMondayWeek(last), -1);
+    return { startMonday, endExclusiveMonday:addDays(endSunday,1) }; }
+  const fmt=n=>`€ ${Number(n||0).toFixed(2)}`;
+  function safeId(){ try{ if(window.crypto && crypto.randomUUID) return crypto.randomUUID(); }catch{} return "id-"+Date.now()+"-"+Math.random().toString(16).slice(2); }
+
+  // ===== Scelta Inserimento =====
+  document.querySelectorAll(".choose-macro").forEach(btn=>btn.addEventListener("click",()=>{
+    startForm("spesa", btn.getAttribute("data-macro"));
+  }));
+  document.querySelector(".choose-entrata").addEventListener("click",()=> startForm("entrata"));
+  document.querySelector(".choose-mutuo").addEventListener("click",()=> startForm("mutuo"));
+
+  // ===== Form handling =====
+  const inputData=document.getElementById("data");
+  const inputImporto=document.getElementById("importo");
+  const selTipo=document.getElementById("tipo");
+  const selMacro=document.getElementById("macro");
+  const selCat=document.getElementById("categoria");
+  const wrapMacro=document.getElementById("wrap-macro");
+  const wrapCategoria=document.getElementById("wrap-categoria");
+
+  function setMutuoVisibility(isMutuo){
+    if(isMutuo){
+      wrapMacro.classList.add("hidden"); wrapCategoria.classList.add("hidden");
+      selMacro.required=false; selCat.required=false;
+    } else {
+      wrapMacro.classList.remove("hidden"); wrapCategoria.classList.remove("hidden");
+      selMacro.required=true; selCat.required=true;
+    }
+  }
+  function refreshCategorie(){
+    selCat.innerHTML="";
+    const macro = selMacro.value;
+    (CATEGORIE[macro]||[]).forEach(v=>{ const o=document.createElement("option"); o.value=v; o.textContent=v; selCat.appendChild(o); });
+  }
+  function refreshMacroETree(){
+    const tipo = selTipo.value;
+    selMacro.innerHTML=""; selCat.innerHTML="";
+    if(tipo==="mutuo"){ setMutuoVisibility(true); return; }
+    setMutuoVisibility(false);
+    const macros = (tipo==="entrata")?["Entrate"] : ["Sopravvivenza","Optional","Cultura","Extra"];
+    macros.forEach(m=>{ const o=document.createElement("option"); o.value=m; o.textContent=m; selMacro.appendChild(o); });
+    refreshCategorie();
+  }
+  selTipo.addEventListener("change", refreshMacroETree);
+  selMacro.addEventListener("change", refreshCategorie);
+
+  function startForm(tipo, macro=null){
+    document.getElementById("form-title").textContent = (tipo==="spesa"?"Nuova Spesa": tipo==="entrata"?"Nuova Entrata":"Nuovo Mutuo");
+    goto("page-form");
+    inputData.value = todayStr();
+    selTipo.value = tipo;
+    refreshMacroETree();
+    if(tipo==="spesa" && macro){
+      selMacro.value = macro; refreshCategorie();
+    }
+  }
+
+  document.getElementById('form-movimento').addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const data = inputData.value;
+    const importo = parseFloat(inputImporto.value);
+    const tipo = selTipo.value;
+    let macro="", categoria="";
+    if(!data || isNaN(importo)){ alert("Controlla data e importo."); return; }
+    if(tipo==="mutuo"){ macro="Mutuo"; categoria="—"; }
+    else if(tipo==="entrata"){ macro="Entrate"; categoria=selCat.value||""; if(!categoria){ alert("Seleziona la voce di entrata."); return; } }
+    else { macro = selMacro.value || ""; categoria = selCat.value || ""; if(!macro || !categoria){ alert("Seleziona macro e sotto-categoria."); return; } }
+    const nota = (document.getElementById("nota").value || "").trim();
+    const mov = { id:safeId(), data, importo:Number(importo), tipo, macro, categoria, nota, updated_at:new Date().toISOString() };
+    MOVIMENTI.unshift(mov); salva(); renderTabella(); goto('page-movimenti'); aggiornaTutti();
+  });
+  document.getElementById("pulisci").addEventListener("click", ()=>{
+    document.getElementById('form-movimento').reset(); inputData.value=todayStr();
+  });
+
+  // ===== Movimenti =====
+  function renderTabella(){
+    const tbody=document.querySelector("#tabella-movimenti tbody");
+    if(!tbody) return;
+    tbody.innerHTML="";
+    (MOVIMENTI||[]).forEach(m=>{
+      const tr=document.createElement("tr");
+      tr.innerHTML = `<td>${m.data}</td><td>${m.tipo}</td><td>${m.macro||""}</td><td>${m.categoria||""}</td><td>€ ${Number(m.importo).toFixed(2)}</td><td>${m.nota||""}</td><td><button class="del" data-id="${m.id}">Elimina</button></td>`;
+      tbody.appendChild(tr);
+    });
+    tbody.querySelectorAll("button.del").forEach(btn=>btn.addEventListener("click",(ev)=>{
+      const id=ev.currentTarget.getAttribute("data-id");
+      MOVIMENTI = (MOVIMENTI||[]).filter(x=>x.id!==id);
+      salva(); renderTabella(); aggiornaTutti();
+    }));
+  }
+  document.getElementById("cancella-tutto").addEventListener("click", ()=>{
+    if(confirm("Svuotare l'archivio locale?")){ MOVIMENTI=[]; salva(); renderTabella(); aggiornaTutti(); }
+  });
+
+  // ===== RIEPILOGO MENSILE =====
+  const inputMese=document.getElementById("mese-riepilogo");
+  (function(){ const d=new Date(); if(inputMese) inputMese.value=`${d.getFullYear()}-${pad(d.getMonth()+1)}`; })();
+  function aggiornaRiepilogo(){
+    if(!inputMese || !inputMese.value) return;
+    const prefix=inputMese.value;
+    const delmese=(MOVIMENTI||[]).filter(m=>(m.data||"").startsWith(prefix));
+    const totali={}; let entrate=0,spese=0;
+    delmese.forEach(m=>{ if(m.tipo==="entrata") entrate+=Number(m.importo); else if(m.tipo==="mutuo"){ spese+=Number(m.importo); totali["Mutuo"]=(totali["Mutuo"]||0)+Number(m.importo); } else { spese+=Number(m.importo); const key=m.macro||"Altro"; totali[key]=(totali[key]||0)+Number(m.importo); } });
+    const ul=document.getElementById("totali-macro"); ul.innerHTML=""; const order=["Sopravvivenza","Optional","Cultura","Extra","Mutuo","Altro"]; let printed=false;
+    order.forEach(k=>{ if((totali[k]||0)>0){ const li=document.createElement("li"); li.textContent=`${k}: € ${(totali[k]).toFixed(2)}`; ul.appendChild(li); printed=true; } });
+    if(!printed){ const li=document.createElement("li"); li.textContent="Nessuna spesa registrata nel mese selezionato."; ul.appendChild(li); }
+    const saldo=entrate-spese; document.getElementById("saldo-mese").textContent=`Entrate: € ${entrate.toFixed(2)} – Spese: € ${spese.toFixed(2)} → Saldo: € ${saldo.toFixed(2)}`;
+  }
+  inputMese?.addEventListener("change", aggiornaRiepilogo);
+
+  // ===== RIEPILOGO SETTIMANALE =====
+  const inputMeseSett=document.getElementById("mese-riepilogo-sett");
+  (function(){ const d=new Date(); if(inputMeseSett) inputMeseSett.value=`${d.getFullYear()}-${pad(d.getMonth()+1)}`; })();
+  function formatRange(a,b){ const dd=x=>String(x).padStart(2,"0"); return `${dd(a.getDate())}/${dd(a.getMonth()+1)} – ${dd(b.getDate())}/${dd(b.getMonth()+1)}`; }
+  function aggiornaRiepilogoSettimanale(){
+    if(!inputMeseSett||!inputMeseSett.value) return;
+    const [Y,M]=inputMeseSett.value.split("-").map(Number); const { startMonday, endExclusiveMonday }=contabileMonthBounds(Y,M);
+    const tbody=document.querySelector("#tabella-riepilogo-sett tbody"); tbody.innerHTML="";
+    for(let cur=new Date(startMonday); cur<endExclusiveMonday; cur=addDays(cur,7)){
+      const weekStart=new Date(cur), weekEnd=endOfSundayWeek(weekStart);
+      let entrate=0, speseSenzaMutuo=0;
+      (MOVIMENTI||[]).forEach(m=>{ if(!m.data) return; const d=parseDate(m.data); if(d>=weekStart && d<=weekEnd){ if(m.tipo==="entrata") entrate+=Number(m.importo); else if(m.tipo==="spesa") speseSenzaMutuo+=Number(m.importo); } });
+      const tr=document.createElement('tr'); tr.innerHTML=`<td>${formatRange(weekStart,weekEnd)}</td><td>${fmt(entrate)}</td><td>${fmt(speseSenzaMutuo)}</td><td>${fmt(entrate-speseSenzaMutuo)}</td>`; tbody.appendChild(tr);
+    }
+  }
+  inputMeseSett?.addEventListener("change", aggiornaRiepilogoSettimanale);
+
+  // ===== TRIMESTRALE =====
+  const inputAnnoTri=document.getElementById("anno-tri");
+  (function(){ const d=new Date(); if(inputAnnoTri) inputAnnoTri.value=d.getFullYear(); })();
+  function aggiornaRiepilogoTrimestri(){
+    const year=parseInt(inputAnnoTri.value,10); const tbody=document.querySelector("#tabella-riepilogo-tri tbody"); tbody.innerHTML="";
+    for(let q=1;q<=4;q++){ const startMonth=(q-1)*3; const start=new Date(year,startMonth,1); const end=new Date(year,startMonth+3,0);
+      let entrate=0,spese=0,mutuo=0;
+      (MOVIMENTI||[]).forEach(m=>{ if(!m.data) return; const d=parseDate(m.data); if(d>=start && d<=end){ if(m.tipo==="entrata") entrate+=Number(m.importo); else if(m.tipo==="mutuo"){ spese+=Number(m.importo); mutuo+=Number(m.importo); } else spese+=Number(m.importo); } });
+      const tr=document.createElement('tr'); tr.innerHTML=`<td>Q${q}</td><td>${start.toLocaleDateString()}–${end.toLocaleDateString()}</td><td>${fmt(entrate)}</td><td>${fmt(spese)}</td><td>${fmt(mutuo)}</td><td>${fmt(entrate-spese)}</td>`; tbody.appendChild(tr);
+    }
+  }
+  inputAnnoTri?.addEventListener('change', aggiornaRiepilogoTrimestri);
+
+  // ===== ANNUALE =====
+  const inputAnnoAnn=document.getElementById("anno-ann");
+  (function(){ const d=new Date(); if(inputAnnoAnn) inputAnnoAnn.value=d.getFullYear(); })();
+  function monthLabel(i){return ["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"][i];}
+  function aggiornaRiepilogoAnnuale(){
+    const year=parseInt(inputAnnoAnn.value,10); const tbody=document.querySelector("#tabella-riepilogo-ann tbody"); tbody.innerHTML="";
+    let totE=0,totS=0,totM=0,totSaldo=0,montante=0;
+    for(let m=0;m<12;m++){ const start=new Date(year,m,1), end=new Date(year,m+1,0);
+      let E=0,S=0,M=0; (MOVIMENTI||[]).forEach(v=>{ if(!v.data) return; const d=parseDate(v.data); if(d>=start && d<=end){ if(v.tipo==="entrata") E+=Number(v.importo); else if(v.tipo==="mutuo"){ S+=Number(v.importo); M+=Number(v.importo); } else S+=Number(v.importo); } });
+      const saldo=E-S; montante+=saldo; totE+=E; totS+=S; totM+=M; totSaldo+=saldo;
+      const tr=document.createElement('tr'); tr.innerHTML=`<td>${monthLabel(m)}</td><td>${fmt(E)}</td><td>${fmt(S)}</td><td>${fmt(M)}</td><td>${fmt(saldo)}</td><td>${fmt(montante)}</td>`; tbody.appendChild(tr);
+    }
+    document.getElementById("ann-tot-entrate").textContent=fmt(totE);
+    document.getElementById("ann-tot-spese").textContent=fmt(totS);
+    document.getElementById("ann-tot-mutuo").textContent=fmt(totM);
+    document.getElementById("ann-tot-saldo").textContent=fmt(totSaldo);
+    document.getElementById("ann-tot-montante").textContent=fmt(montante);
+  }
+  inputAnnoAnn?.addEventListener('change', aggiornaRiepilogoAnnuale);
+
+  // ===== DASHBOARD (torta, responsive, senza mutuo) =====
+  const inputMeseDash=document.getElementById("mese-dashboard");
+  (function(){ const d=new Date(); if(inputMeseDash) inputMeseDash.value=`${d.getFullYear()}-${pad(d.getMonth()+1)}`; })();
+  const COLORS = ["#60a5fa","#34d399","#fbbf24","#f87171"];
+  let chartCtx=null;
+  function sizeCanvasToContainer(canvas, ratio=0.66){
+    const dpr = window.devicePixelRatio || 1;
+    const parent = canvas.parentElement;
+    const w = Math.min(parent.clientWidth, 520);
+    const h = Math.max(220, Math.round(w*ratio));
+    canvas.style.width = w + "px";
+    canvas.style.height = h + "px";
+    canvas.width = Math.floor(w*dpr);
+    canvas.height = Math.floor(h*dpr);
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    return ctx;
+  }
+  function drawPie(ctx, values, labels){
+    const W=ctx.canvas.clientWidth, H=ctx.canvas.clientHeight;
+    const cx=W/2, cy=H/2, r=Math.min(W,H)*0.35;
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    const total = values.reduce((a,b)=>a+b,0);
+    let start= -Math.PI/2;
+    values.forEach((v,i)=>{
+      const ang = total>0 ? (v/total)*Math.PI*2 : 0;
+      ctx.beginPath(); ctx.moveTo(cx,cy);
+      ctx.fillStyle=COLORS[i%COLORS.length];
+      ctx.arc(cx,cy,r,start,start+ang); ctx.closePath(); ctx.fill();
+      const mid = start + ang/2;
+      const lx = cx + Math.cos(mid)*(r+14);
+      const ly = cy + Math.sin(mid)*(r+14);
+      const perc = total>0 ? Math.round((v/total)*100) : 0;
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--fg') || '#222';
+      ctx.font="12px system-ui, Arial"; ctx.textAlign="center"; ctx.textBaseline="middle";
+      ctx.fillText(`${perc}%`, lx, ly);
+      start += ang;
+    });
+    const legend = document.getElementById("legend"); legend.innerHTML="";
+    labels.forEach((lab,i)=>{ const item=document.createElement("div"); item.className="legend-item";
+      const dot=document.createElement("span"); dot.className="dot"; dot.style.background=COLORS[i%COLORS.length];
+      const text=document.createElement("span"); text.textContent=`${lab}`;
+      legend.appendChild(item); item.appendChild(dot); item.appendChild(text);
+    });
+  }
+  function aggiornaDashboard(){
+    const prefix=inputMeseDash.value;
+    const mvs=(MOVIMENTI||[]).filter(m=>(m.data||"").startsWith(prefix));
+    const labs=["Sopravvivenza","Optional","Cultura","Extra"];
+    const values=[0,0,0,0];
+    mvs.forEach(m=>{ if(m.tipo==="spesa"){ const idx=labs.indexOf(m.macro||""); if(idx>=0) values[idx]+=Number(m.importo); } });
+    const canvas=document.getElementById("chart");
+    chartCtx = sizeCanvasToContainer(canvas, 0.75);
+    drawPie(chartCtx, values, labs);
+  }
+  function resizeAndDrawChart(){
+    if(document.getElementById('page-dashboard').classList.contains('hidden')) return;
+    aggiornaDashboard();
+  }
+  window.addEventListener('resize', ()=>{ resizeAndDrawChart(); }, {passive:true});
+  inputMeseDash?.addEventListener('change', aggiornaDashboard);
+
+  // ===== Boot =====
+  function aggiornaTutti(){ aggiornaRiepilogo(); aggiornaRiepilogoSettimanale(); aggiornaRiepilogoTrimestri(); aggiornaRiepilogoAnnuale(); aggiornaDashboard(); renderTabella(); }
+  goto('page-home'); aggiornaTutti();
+  </script>
+</body>
+</html>
