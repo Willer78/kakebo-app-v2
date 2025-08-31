@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Kakebo App v3.8.4 (PWA)</title>
+  <title>Kakebo App v3.8.5 (PWA)</title>
   <link rel="stylesheet" href="style.css"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="icon" type="image/png" sizes="192x192" href="icon.png"/>
@@ -48,11 +48,11 @@
             </select>
           </label>
 
-          <label>Macro area
+          <label id="wrap-macro">Macro area
             <select id="macro" required></select>
           </label>
 
-          <label>Sotto-categoria
+          <label id="wrap-categoria">Sotto-categoria
             <select id="categoria" required></select>
           </label>
 
@@ -213,14 +213,14 @@
   </main>
 
   <footer>
-    <small>v3.8.4 — PWA completa — build 2025-08-31 16:47:16. Dati locali (offline-first). Nessun cloud attivo.</small>
+    <small>v3.8.5 — PWA completa — build 2025-08-31 16:59:14. Dati locali (offline-first). Nessun cloud attivo.</small>
   </footer>
 
   <!-- Librerie -->
   <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <!-- App -->
-  <script src="script.js"></script>
+  <!-- App (cache-buster filename) -->
+  <script src="script_v3_8_5.js"></script>
 
   <!-- Service Worker -->
   <script>

@@ -1,12 +1,6 @@
-# Kakebo App v3.8.4 — FULL STABLE
-
-- Fix definitivo Macro/Categoria + default Tipo=Spesa al boot
-- Inserimento movimenti funzionante (submit + tabella)
-- Riepiloghi mensile/settimanale/trimestrale/annuale
-- Dashboard (Chart.js)
-- Export PDF/CSV
-- Backup/Import .kakebo
-- Tema chiaro/scuro
-- PWA (manifest + service worker senza cache)
-
-Build: 2025-08-31 16:47:16
+# Kakebo App v3.8.5 — cache-buster
+- Macro/Categoria mai disabilitati (solo nascosti per 'mutuo')
+- Forzatura Tipo=Spesa al boot
+- Script rinominato (script_v3_8_5.js) per bypassare cache SW
+- Resto invariato: inserimenti, riepiloghi, dashboard, export, backup
+Build: 2025-08-31 16:59:14
