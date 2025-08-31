@@ -1,1 +1,1 @@
-console.log('App Kakebo 3.8.1 caricata');
+console.log("Script Kakebo attivo.");

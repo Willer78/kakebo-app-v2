@@ -1,2 +1,2 @@
-# Kakebo App v3.8.1
-App per la gestione delle spese personali, in versione offline completa.
+# Kakebo v3.8.2 PWA
+Questa è la versione stabile con supporto mobile e installazione.
