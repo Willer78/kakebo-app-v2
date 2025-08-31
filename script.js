@@ -1,37 +1,46 @@
-// === CONFIGURAZIONE SUPABASE ===
-// Sostituisci questi placeholder con i valori del tuo progetto Supabase
-const SUPABASE_URL = "https://YOUR-PROJECT.supabase.co";
-const SUPABASE_ANON_KEY = "YOUR-ANON-KEY";
+/* ===========================
+   Kakebo v3.8.1 — Frontend
+   - Offline completo (come v3.7)
+   - Login + Sync opzionale (Supabase)
+   =========================== */
 
-// === Categorie definite ===
+// ===== Supabase (configura quando pronto) =====
+const SUPABASE_URL = "https://YOUR-PROJECT.supabase.co"; // <-- sostituisci
+const SUPABASE_ANON_KEY = "YOUR-ANON-KEY";               // <-- sostituisci
+
+// Safe guard: se lib non carica, creiamo stub per modalità offline
+if (!window.supabase || !window.supabase.createClient) {
+  console.warn("Supabase non caricato: modalità locale attiva.");
+  window.supabase = {
+    createClient: () => ({
+      auth: {
+        getUser: async()=>({ data:{ user:null } }),
+        onAuthStateChange: ()=>({}),
+        signOut: async()=>({}),
+        signInWithOtp: async()=>({ error:null })
+      },
+      from: ()=>({ select: async()=>({ data:[], error:null }), upsert: async()=>({ error:null }), delete: async()=>({ error:null }) })
+    })
+  };
+}
+const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ===== Dati e helper =====
 const CATEGORIE = {
-  Sopravvivenza: [
-    "Alimentazione","Farmacia","Cane","Telefono fisso","Acqua","Gas",
-    "Elettricità","Auto","Moto"
-  ],
-  Optional: [
-    "Ristorante","Spese di casa","Cosmesi/ capelli","Shopping","Sport","Cellulare"
-  ],
-  Cultura: [
-    "Libri","Musica","Scuola Eva","Scuola Elena"
-  ],
-  Extra: [
-    "Viaggi","Regali","Spese casa grandi"
-  ],
-  Entrate: [
-    "Stipendio","Assegni familiari","Fotovoltaico","Altre entrate"
-  ]
+  Sopravvivenza: ["Alimentazione","Farmacia","Cane","Telefono fisso","Acqua","Gas","Elettricità","Auto","Moto"],
+  Optional: ["Ristorante","Spese di casa","Cosmesi/ capelli","Shopping","Sport","Cellulare"],
+  Cultura: ["Libri","Musica","Scuola Eva","Scuola Elena"],
+  Extra: ["Viaggi","Regali","Spese casa grandi"],
+  Entrate: ["Stipendio","Assegni familiari","Fotovoltaico","Altre entrate"]
 };
-
-// === Helper ===
-const $ = (sel) => document.querySelector(sel);
-const fmtMoney = (n) => `€ ${n.toFixed(2)}`;
-const pad = (n) => String(n).padStart(2,"0");
-const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
-const parseDate = (s) => { const [Y,M,D] = s.split("-").map(Number); return new Date(Y, M-1, D); };
-const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
-const startOfMondayWeek = (d) => { const day = d.getDay(); const offset = (day === 0 ? -6 : 1 - day); return addDays(d, offset); };
-const endOfSundayWeek = (d) => addDays(startOfMondayWeek(d), 6);
+const $ = (s)=>document.querySelector(s);
+const fmtMoney = (n)=>`€ ${Number(n||0).toFixed(2)}`;
+const pad = (n)=>String(n).padStart(2,"0");
+const todayStr = ()=>{ const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+const parseDate = (s)=>{ const [Y,M,D]=s.split("-").map(Number); return new Date(Y, M-1, D); };
+const addDays = (d,n)=>{ const x=new Date(d); x.setDate(x.getDate()+n); return x; };
+const startOfMondayWeek = (d)=>{ const day=d.getDay(); const offset=(day===0?-6:1-day); return addDays(d, offset); };
+const endOfSundayWeek = (d)=> addDays(startOfMondayWeek(d), 6);
 
 function contabileMonthBounds(year, month /*1-12*/){
   const first = new Date(year, month-1, 1);
@@ -44,9 +53,13 @@ function contabileMonthBounds(year, month /*1-12*/){
   const endExclusiveMonday = addDays(endSunday, 1);
   return { startMonday: start, endExclusiveMonday };
 }
-const quarterRange = (year, q) => { const startMonth=(q-1)*3; const start=new Date(year,startMonth,1); const end=new Date(year,startMonth+3,0); return {start,end}; };
 
-// === Theme ===
+const KEY = "kakebo_movimenti_v1";
+let MOVIMENTI = [];
+try { MOVIMENTI = JSON.parse(localStorage.getItem(KEY) || "[]"); } catch { MOVIMENTI = []; }
+const salvaLocal = ()=> localStorage.setItem(KEY, JSON.stringify(MOVIMENTI));
+
+// ===== Theme =====
 (function initTheme(){
   const saved = localStorage.getItem("kakebo_theme") || "light";
   document.documentElement.setAttribute("data-theme", saved);
@@ -58,28 +71,19 @@ const quarterRange = (year, q) => { const startMonth=(q-1)*3; const start=new Da
   });
 })();
 
-// === Storage ===
-const KEY = "kakebo_movimenti_v1";
-let MOVIMENTI = [];
-try { MOVIMENTI = JSON.parse(localStorage.getItem(KEY) || "[]"); } catch { MOVIMENTI = []; }
-const salvaLocal = () => localStorage.setItem(KEY, JSON.stringify(MOVIMENTI));
-
-// === Supabase client ===
-const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// === Auth UI ===
+// ===== Auth UI =====
 const tabs = $("#tabs");
 const app = $("#app");
-const loginSection = $("#sezione-login");
 const loginOpen = $("#btn-login-open");
 const loginClose = $("#login-close");
+const loginSection = $("#sezione-login");
 const loginForm = $("#form-login");
 const loginEmail = $("#login-email");
 const loginMsg = $("#login-msg");
 const btnLogout = $("#btn-logout");
 const authEmail = $("#auth-email");
 
-loginOpen.addEventListener("click", ()=>{ loginSection.classList.remove("hidden"); });
+loginOpen.addEventListener("click", ()=> loginSection.classList.remove("hidden"));
 loginClose.addEventListener("click", ()=>{ loginSection.classList.add("hidden"); loginMsg.textContent=""; });
 
 loginForm.addEventListener("submit", async (e)=>{
@@ -87,19 +91,18 @@ loginForm.addEventListener("submit", async (e)=>{
   const email = loginEmail.value.trim();
   if(!email) return;
   loginMsg.textContent = "Invio in corso…";
-  const { error } = await supa.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.href } });
-  if(error){ loginMsg.textContent = "Errore: " + error.message; }
-  else { loginMsg.textContent = "Controlla la tua email e apri il magic link per completare l'accesso."; }
+  try {
+    const { error } = await supa.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.href } });
+    if(error) loginMsg.textContent = "Errore: " + error.message;
+    else loginMsg.textContent = "Controlla la tua email e apri il magic link.";
+  } catch (err) {
+    loginMsg.textContent = "Impossibile contattare il servizio. Modalità offline attiva.";
+  }
 });
 
 btnLogout.addEventListener("click", async ()=>{
   await supa.auth.signOut();
-  authEmail.textContent = "";
-  btnLogout.classList.add("hidden");
-  loginOpen.classList.remove("hidden");
-  tabs.classList.add("hidden");
-  app.classList.add("hidden");
-  // manteniamo i dati locali, ma non mostriamo sync
+  showOfflineUI();
 });
 
 async function onAuthChanged(){
@@ -111,19 +114,21 @@ async function onAuthChanged(){
     tabs.classList.remove("hidden");
     app.classList.remove("hidden");
     await initialSync(user);
-  }else{
-    // Accesso facoltativo: permettiamo uso locale anche senza login
-    authEmail.textContent = "offline (solo locale)";
-    btnLogout.classList.add("hidden");
-    loginOpen.classList.remove("hidden");
-    tabs.classList.remove("hidden"); // app usabile anche senza login
-    app.classList.remove("hidden");
+  } else {
+    showOfflineUI();
   }
 }
-supa.auth.onAuthStateChange((_event, _session)=>{ onAuthChanged(); });
+function showOfflineUI(){
+  authEmail.textContent = "offline (solo locale)";
+  btnLogout.classList.add("hidden");
+  loginOpen.classList.remove("hidden");
+  tabs.classList.remove("hidden");
+  app.classList.remove("hidden");
+}
+supa.auth.onAuthStateChange(()=> onAuthChanged());
 onAuthChanged();
 
-// === UI: Tabs ===
+// ===== Tabs =====
 const tabIns = document.getElementById("tab-inserimento");
 const tabRiep = document.getElementById("tab-riepilogo");
 const tabSett = document.getElementById("tab-riepilogo-sett");
@@ -155,7 +160,7 @@ tabTri .addEventListener("click", ()=>switchTab("tri"));
 tabAnn .addEventListener("click", ()=>switchTab("ann"));
 tabDash.addEventListener("click", ()=>switchTab("dash"));
 
-// === Form ===
+// ===== Form =====
 const inputData = $("#data");
 const inputImporto = $("#importo");
 const selTipo = $("#tipo");
@@ -195,14 +200,14 @@ function refreshCategorie(){
   const macro = selMacro.value;
   const voci = CATEGORIE[macro] || [];
   for(const v of voci){
-    const o = document.createElement("option"); o.value = v; o.textContent = v; selCat.appendChild(o);
+    const o = document.createElement("option"); o.value = v; o.textContent = v;
+    selCat.appendChild(o);
   }
 }
 selTipo.addEventListener("change", refreshMacroETree);
 selMacro.addEventListener("change", refreshCategorie);
 refreshMacroETree();
 
-// Submit form
 document.getElementById("form-movimento").addEventListener("submit", async (e)=>{
   e.preventDefault();
   const data = inputData.value;
@@ -228,34 +233,25 @@ document.getElementById("form-movimento").addEventListener("submit", async (e)=>
   e.target.reset();
   refreshMacroETree();
   aggiornaTutti();
-  // sync best-effort
   try { await pushChanges(); } catch {}
 });
 
-function aggiornaTutti(){ aggiornaRiepilogo(); aggiornaRiepilogoSettimanale(); aggiornaRiepilogoTrimestri(); aggiornaRiepilogoAnnuale(); aggiornaDashboard(); }
-
-// Pulsanti extra
 document.getElementById("pulisci").addEventListener("click", ()=>{
   document.getElementById("form-movimento").reset();
   inputData.value = todayStr();
   refreshMacroETree();
 });
 document.getElementById("cancella-tutto").addEventListener("click", ()=>{
-  if(confirm("Sei sicuro di voler svuotare l'archivio locale? Questa azione è irreversibile.")){
-    MOVIMENTI = [];
-    salvaLocal();
-    renderTabella();
-    aggiornaTutti();
-  }
+  if(confirm("Sei sicuro di voler svuotare l'archivio locale?")){ MOVIMENTI=[]; salvaLocal(); renderTabella(); aggiornaTutti(); }
 });
 btnSync.addEventListener("click", async ()=>{
   await bidirectionalSync();
   alert("Sincronizzazione completata.");
 });
 
-// === BACKUP / RESTORE (come v3.7) ===
+// ===== Backup / Restore =====
 document.getElementById("btn-backup-export").addEventListener("click", ()=>{
-  const payload = { version:"3.8", exportedAt:new Date().toISOString(), data:Array.isArray(MOVIMENTI)?MOVIMENTI:[] };
+  const payload = { version:"3.8.1", exportedAt:new Date().toISOString(), data:Array.isArray(MOVIMENTI)?MOVIMENTI:[] };
   const ym = (()=>{ const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}`; })();
   const blob = new Blob([JSON.stringify(payload,null,2)], {type:"application/json"});
   const link = document.createElement("a");
@@ -271,7 +267,7 @@ document.getElementById("input-backup").addEventListener("change", (e)=>{
     try{
       const obj = JSON.parse(ev.target.result);
       if(!obj || !Array.isArray(obj.data)) throw new Error("Formato non valido: manca 'data' come array.");
-      const merge = confirm("Vuoi UNIRE (merge) i dati del backup con quelli esistenti?\nOK = Unisci, Annulla = Sostituisci completamente.");
+      const merge = confirm("OK = Unisci i dati del backup; Annulla = Sostituisci completamente.");
       if(merge){
         const byId = new Map(MOVIMENTI.map(m=>[m.id,m]));
         for(const m of obj.data){ if(m && m.id){ byId.set(m.id, m); } }
@@ -283,7 +279,6 @@ document.getElementById("input-backup").addEventListener("change", (e)=>{
       salvaLocal();
       renderTabella();
       aggiornaTutti();
-      // push verso cloud se loggato
       await pushChanges();
       alert("Import completato con successo.");
     }catch(err){
@@ -293,7 +288,7 @@ document.getElementById("input-backup").addEventListener("change", (e)=>{
   reader.readAsText(file);
 });
 
-// === Tabella movimenti ===
+// ===== Tabella movimenti =====
 function renderTabella(){
   const tbody = document.querySelector("#tabella-movimenti tbody");
   tbody.innerHTML = "";
@@ -323,7 +318,7 @@ function renderTabella(){
 }
 renderTabella();
 
-// === Riepiloghi (come v3.7) ===
+// ===== Riepilogo mensile =====
 const inputMese = document.getElementById("mese-riepilogo");
 (function(){ const d=new Date(); inputMese.value=`${d.getFullYear()}-${pad(d.getMonth()+1)}`; })();
 function aggiornaRiepilogo(){
@@ -346,6 +341,7 @@ function aggiornaRiepilogo(){
 }
 inputMese.addEventListener("change", aggiornaRiepilogo);
 
+// ===== Riepilogo settimanale =====
 const inputMeseSett = document.getElementById("mese-riepilogo-sett");
 (function(){ const d=new Date(); inputMeseSett.value=`${d.getFullYear()}-${pad(d.getMonth()+1)}`; })();
 function formatRange(a,b){ const dd=(x)=>String(x).padStart(2,"0"); return `${dd(a.getDate())}/${dd(a.getMonth()+1)} – ${dd(b.getDate())}/${dd(b.getMonth()+1)}`; }
@@ -370,13 +366,14 @@ function aggiornaRiepilogoSettimanale(){
 }
 inputMeseSett.addEventListener("change", aggiornaRiepilogoSettimanale);
 
+// ===== Riepilogo trimestrale =====
 const inputAnnoTri = document.getElementById("anno-tri");
 (function(){ const d = new Date(); inputAnnoTri.value = d.getFullYear(); })();
 function aggiornaRiepilogoTrimestri(){
   const year = parseInt(inputAnnoTri.value, 10); if(isNaN(year)) return;
   const tbody = document.querySelector("#tabella-riepilogo-tri tbody"); tbody.innerHTML = "";
   for(let q=1; q<=4; q++){
-    const {start, end} = quarterRange(year, q);
+    const startMonth=(q-1)*3; const start=new Date(year,startMonth,1); const end=new Date(year,startMonth+3,0);
     let entrate = 0, spese = 0, mutuo = 0;
     for(const m of MOVIMENTI){
       if(!m.data) continue; const d = parseDate(m.data);
@@ -391,6 +388,7 @@ function aggiornaRiepilogoTrimestri(){
 }
 inputAnnoTri.addEventListener("change", aggiornaRiepilogoTrimestri);
 
+// ===== Riepilogo annuale =====
 const inputAnnoAnn = document.getElementById("anno-ann");
 (function(){ const d = new Date(); inputAnnoAnn.value = d.getFullYear(); })();
 function monthLabel(i){ return ["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"][i]; }
@@ -425,66 +423,171 @@ function aggiornaRiepilogoAnnuale(){
 }
 inputAnnoAnn.addEventListener("change", aggiornaRiepilogoAnnuale);
 
-// === CSV + PDF (come 3.7, omesso per brevità qui — in codice completo già presente in v3.7) ===
-// (Per concisione non ripetiamo qui i bind; in produzione mantenere i pulsanti come in v3.7.)
-
-// === SYNC FUNZIONI BASE ===
-async function currentUserId(){
-  const { data: { user } } = await supa.auth.getUser();
-  return user ? user.id : null;
+// ===== PDF EXPORT =====
+function exportPDF(filename, titleText, subtitleText, node, extraFooterText){
+  if(typeof html2pdf === "undefined"){ alert("Impossibile generare PDF (libreria non caricata)."); return; }
+  const container = document.createElement("div");
+  const title = document.createElement("h2"); title.className="pdf-title"; title.textContent=titleText;
+  const sub = document.createElement("p"); sub.className="pdf-sub"; sub.textContent=subtitleText;
+  container.appendChild(title); container.appendChild(sub); container.appendChild(node.cloneNode(true));
+  if(extraFooterText){ const foot=document.createElement("p"); foot.className="pdf-footer"; foot.textContent=extraFooterText; container.appendChild(foot); }
+  const opt = { margin:10, filename, image:{type:'jpeg',quality:0.98}, html2canvas:{scale:2,useCORS:true}, jsPDF:{unit:'mm',format:'a4',orientation:'portrait'} };
+  html2pdf().set(opt).from(container).save();
 }
+document.getElementById("btn-pdf-mensile")?.addEventListener("click", ()=>{
+  aggiornaRiepilogo();
+  const ym = inputMese.value || "(mese)";
+  exportPDF(`Kakebo_Mensile_${ym}.pdf`, "Kakebo – Riepilogo mensile", `Mese: ${ym}`, document.getElementById("riepilogo-risultati"), document.getElementById("saldo-mese").textContent);
+});
+document.getElementById("btn-pdf-sett")?.addEventListener("click", ()=>{
+  aggiornaRiepilogoSettimanale();
+  const ym = inputMeseSett.value || "(mese)";
+  exportPDF(`Kakebo_Settimanale_${ym}.pdf`, "Kakebo – Riepilogo settimanale", `Mese contabile: ${ym}`, document.getElementById("tabella-riepilogo-sett"), "Nota: il mutuo è escluso dai totali settimanali.");
+});
+document.getElementById("btn-pdf-tri")?.addEventListener("click", ()=>{
+  aggiornaRiepilogoTrimestri();
+  const y = inputAnnoTri.value || "(anno)";
+  exportPDF(`Kakebo_Trimestrale_${y}.pdf`, "Kakebo – Riepilogo trimestrale", `Anno: ${y}`, document.getElementById("tabella-riepilogo-tri"), "Il mutuo è incluso nelle spese e mostrato separatamente.");
+});
+document.getElementById("btn-pdf-ann")?.addEventListener("click", ()=>{
+  aggiornaRiepilogoAnnuale();
+  const y = inputAnnoAnn.value || "(anno)";
+  exportPDF(`Kakebo_Annuale_${y}.pdf`, "Kakebo – Riepilogo annuale", `Anno: ${y}`, document.getElementById("tabella-riepilogo-ann"), "Il montante è la somma cumulata dei saldi mese.");
+});
 
+// ===== CSV EXPORT =====
+function rowsToCSV(rows){
+  return rows.map(r => r.map(v => {
+    const s = String(v ?? "");
+    if (s.includes(';') || s.includes('"') || s.includes('\n')) return '"' + s.replace(/"/g,'""') + '"';
+    return s;
+  }).join(';')).join('\n');
+}
+document.getElementById("btn-csv-mensile")?.addEventListener("click", ()=>{
+  const ym = inputMese.value || "(mese)";
+  const prefix = ym;
+  const delmese = MOVIMENTI.filter(m => (m.data || "").startsWith(prefix));
+  const totali = {}; let entrate=0, spese=0;
+  for(const m of delmese){
+    if(m.tipo==="entrata") entrate+=Number(m.importo);
+    else if(m.tipo==="mutuo"){ spese+=Number(m.importo); totali["Mutuo"]=(totali["Mutuo"]||0)+Number(m.importo); }
+    else { spese+=Number(m.importo); const key=m.macro||"Altro"; totali[key]=(totali[key]||0)+Number(m.importo); }
+  }
+  const order=["Sopravvivenza","Optional","Cultura","Extra","Mutuo","Altro"];
+  const rows=[["Macro","Importo (€)"]];
+  for(const k of order){ if((totali[k]||0)>0) rows.push([k, (totali[k]).toFixed(2)]); }
+  rows.push([]); rows.push(["Entrate", entrate.toFixed(2)]); rows.push(["Spese", spese.toFixed(2)]); rows.push(["Saldo", (entrate-spese).toFixed(2)]);
+  const csv = rowsToCSV(rows);
+  const link = document.createElement("a"); link.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); link.download=`Kakebo_Mensile_${ym}.csv`; document.body.appendChild(link); link.click(); setTimeout(()=>{URL.revokeObjectURL(link.href); link.remove();},0);
+});
+document.getElementById("btn-csv-sett")?.addEventListener("click", ()=>{
+  const ym = inputMeseSett.value || "(mese)";
+  const [Y,M]=ym.split("-").map(Number);
+  const { startMonday, endExclusiveMonday } = contabileMonthBounds(Y,M);
+  const rows=[["Settimana","Entrate","Spese (no mutuo)","Saldo"]];
+  for(let cur=new Date(startMonday); cur<endExclusiveMonday; cur=addDays(cur,7)){
+    const weekStart=new Date(cur), weekEnd=endOfSundayWeek(weekStart);
+    let entrate=0, speseSenzaMutuo=0;
+    for(const m of MOVIMENTI){
+      if(!m.data) continue; const d=parseDate(m.data);
+      if(d>=weekStart && d<=weekEnd){ if(m.tipo==="entrata") entrate+=Number(m.importo); else if(m.tipo==="spesa") speseSenzaMutuo+=Number(m.importo); }
+    }
+    rows.push([`${weekStart.toLocaleDateString()}–${weekEnd.toLocaleDateString()}`, entrate.toFixed(2), speseSenzaMutuo.toFixed(2), (entrate-speseSenzaMutuo).toFixed(2)]);
+  }
+  const csv = rowsToCSV(rows);
+  const link=document.createElement("a"); link.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); link.download=`Kakebo_Settimanale_${ym}.csv`; document.body.appendChild(link); link.click(); setTimeout(()=>{URL.revokeObjectURL(link.href); link.remove();},0);
+});
+document.getElementById("btn-csv-tri")?.addEventListener("click", ()=>{
+  const y = inputAnnoTri.value || "(anno)";
+  const rows=[["Trimestre","Periodo","Entrate","Spese (incl. mutuo)","Mutuo","Saldo"]];
+  for(let q=1;q<=4;q++){
+    const startMonth=(q-1)*3; const start=new Date(parseInt(y,10),startMonth,1); const end=new Date(parseInt(y,10),startMonth+3,0);
+    let entrate=0, spese=0, mutuo=0;
+    for(const m of MOVIMENTI){
+      if(!m.data) continue; const d=parseDate(m.data);
+      if(d>=start && d<=end){ if(m.tipo==="entrata") entrate+=Number(m.importo); else if(m.tipo==="mutuo"){ spese+=Number(m.importo); mutuo+=Number(m.importo); } else spese+=Number(m.importo); }
+    }
+    rows.push([`Q${q}`, `${start.toLocaleDateString()}–${end.toLocaleDateString()}`, entrate.toFixed(2), spese.toFixed(2), mutuo.toFixed(2), (entrate-spese).toFixed(2)]);
+  }
+  const csv=rowsToCSV(rows); const link=document.createElement("a"); link.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); link.download=`Kakebo_Trimestrale_${y}.csv`; document.body.appendChild(link); link.click(); setTimeout(()=>{URL.revokeObjectURL(link.href); link.remove();},0);
+});
+document.getElementById("btn-csv-ann")?.addEventListener("click", ()=>{
+  const y = inputAnnoAnn.value || "(anno)";
+  const rows=[["Mese","Entrate","Spese (incl. mutuo)","Mutuo","Saldo mese","Montante"]];
+  let montante=0;
+  for(let m=0;m<12;m++){
+    const start=new Date(parseInt(y,10),m,1);
+    const end=new Date(parseInt(y,10),m+1,0);
+    let entrate=0,spese=0,mutuo=0;
+    for(const mov of MOVIMENTI){
+      if(!mov.data) continue; const d=parseDate(mov.data);
+      if(d>=start && d<=end){ if(mov.tipo==="entrata") entrate+=Number(mov.importo); else if(mov.tipo==="mutuo"){spese+=Number(mov.importo);mutuo+=Number(mov.importo);} else spese+=Number(mov.importo); }
+    }
+    const saldo=entrate-spese; montante+=saldo;
+    rows.push([[ "Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic" ][m], entrate.toFixed(2), spese.toFixed(2), mutuo.toFixed(2), saldo.toFixed(2), montante.toFixed(2)]);
+  }
+  const csv=rowsToCSV(rows); const link=document.createElement("a"); link.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); link.download=`Kakebo_Annuale_${y}.csv`; document.body.appendChild(link); link.click(); setTimeout(()=>{URL.revokeObjectURL(link.href); link.remove();},0);
+});
+
+// ===== Dashboard =====
+let chart;
+const inputMeseDash = document.getElementById("mese-dashboard");
+(function(){ const d=new Date(); inputMeseDash.value=`${d.getFullYear()}-${pad(d.getMonth()+1)}`; })();
+function aggiornaDashboard(){
+  if(!inputMeseDash.value) return;
+  const prefix = inputMeseDash.value;
+  const delmese = MOVIMENTI.filter(m => (m.data || "").startsWith(prefix));
+  const keys = ["Sopravvivenza","Optional","Cultura","Extra","Mutuo"];
+  const values = {Sopravvivenza:0,Optional:0,Cultura:0,Extra:0,Mutuo:0};
+  for(const m of delmese){
+    if(m.tipo==="spesa"){ const key=m.macro||"Altro"; if(values[key]==null) values[key]=0; values[key]+=Number(m.importo); }
+    else if(m.tipo==="mutuo"){ values["Mutuo"] += Number(m.importo); }
+  }
+  const ctx = document.getElementById("chart-macro").getContext("2d");
+  if(chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type: "bar",
+    data: { labels: keys, datasets: [{ label: "Spese per macro (€)", data: keys.map(k=>values[k]||0) }] },
+    options: { responsive: true, scales: { y: { beginAtZero: true } } }
+  });
+}
+inputMeseDash.addEventListener("change", aggiornaDashboard);
+
+// ===== Sync (no-op se placeholders) =====
+async function currentUserId(){ const { data:{ user } } = await supa.auth.getUser(); return user? user.id : null; }
 async function initialSync(user){
-  // Scarica tutto il remoto per l'utente e unisci con locale (ultimo aggiornamento vince)
-  const uid = user.id;
-  const { data, error } = await supa.from('movements').select('*').eq('user_id', uid).order('updated_at', { ascending:false });
-  if(error){ console.warn('sync error', error.message); return; }
-  const byId = new Map((MOVIMENTI||[]).map(m=>[m.id, m]));
+  if(!SUPABASE_URL.includes("supabase.co") || SUPABASE_URL.includes("YOUR-PROJECT")) return;
+  const { data, error } = await supa.from('movements').select('*').eq('user_id', user.id).order('updated_at', { ascending:false });
+  if(error) return;
+  const byId = new Map((MOVIMENTI||[]).map(m=>[m.id,m]));
   for(const r of data){
     const local = byId.get(r.id);
     if(!local || (r.updated_at > (local.updated_at || local.data))){
-      byId.set(r.id, {
-        id: r.id, data: r.date, importo: Number(r.amount),
-        tipo: r.kind, macro: r.macro, categoria: r.category, nota: r.note || "",
-        updated_at: r.updated_at
-      });
+      byId.set(r.id, { id:r.id, data:r.date, importo:Number(r.amount), tipo:r.kind, macro:r.macro, categoria:r.category, nota:r.note||"", updated_at:r.updated_at });
     }
   }
   MOVIMENTI = Array.from(byId.values()).sort((a,b)=> (b.updated_at||b.data||"").localeCompare(a.updated_at||a.data||"") );
-  salvaLocal();
-  renderTabella();
-  aggiornaTutti();
+  salvaLocal(); renderTabella(); aggiornaTutti();
 }
-
 async function pushChanges(){
   const uid = await currentUserId();
-  if(!uid) return; // offline/ospite
-  // upsert tutti i movimenti locali
+  if(!uid || SUPABASE_URL.includes("YOUR-PROJECT")) return;
   if(!Array.isArray(MOVIMENTI) || MOVIMENTI.length===0) return;
   const rows = MOVIMENTI.map(m=>({
-    id: m.id,
-    user_id: uid,
-    date: m.data,
-    amount: Number(m.importo),
-    kind: m.tipo,
-    macro: m.macro || null,
-    category: m.categoria || null,
-    note: m.nota || null,
-    updated_at: m.updated_at || new Date().toISOString()
+    id:m.id, user_id:uid, date:m.data, amount:Number(m.importo), kind:m.tipo, macro:m.macro||null, category:m.categoria||null, note:m.nota||null, updated_at:m.updated_at||new Date().toISOString()
   }));
-  const { error } = await supa.from('movements').upsert(rows, { onConflict:'id' });
-  if(error) console.warn('push error', error.message);
+  await supa.from('movements').upsert(rows, { onConflict:'id' });
 }
-
 async function bidirectionalSync(){
-  const { data: { user } } = await supa.auth.getUser();
-  if(!user){ alert("Non sei loggato: la sincronizzazione cloud richiede l'accesso."); return; }
-  await pushChanges();
-  await initialSync(user);
+  const { data:{ user } } = await supa.auth.getUser();
+  if(!user){ alert("Non sei loggato: la sincronizzazione richiede l'accesso."); return; }
+  await pushChanges(); await initialSync(user);
 }
-
 async function deleteRemote(id){
   const uid = await currentUserId();
-  if(!uid) return;
+  if(!uid || SUPABASE_URL.includes("YOUR-PROJECT")) return;
   await supa.from('movements').delete().eq('user_id', uid).eq('id', id);
 }
+
+// ===== Avvio =====
+function aggiornaTutti(){ aggiornaRiepilogo(); aggiornaRiepilogoSettimanale(); aggiornaRiepilogoTrimestri(); aggiornaRiepilogoAnnuale(); aggiornaDashboard(); }

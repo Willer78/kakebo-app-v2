@@ -43,7 +43,7 @@ footer{padding:16px 20px;color:var(--muted)}
 .backup-card h3{margin:0 0 10px 0}
 .backup-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px}
-/* allineamento numeri */
+/* impostazioni numeriche tabelle */
 #tabella-riepilogo-sett th:nth-child(2),
 #tabella-riepilogo-sett th:nth-child(3),
 #tabella-riepilogo-sett th:nth-child(4),

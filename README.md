@@ -1,18 +1,16 @@
-# Kakebo App v3.8 — Login + Sync (base)
-Questa versione aggiunge **login via magic link** e **sync cloud** (Supabase). Offline locale sempre disponibile.
+# Kakebo App v3.8.1 — Login + Sync base (offline‑first)
+Questa build:
+- carica **Supabase prima** di `script.js` (fix login che non si apriva);
+- funziona **anche senza Supabase** (modalità locale completa);
+- include tutte le funzioni: backup/import, PDF/CSV, riepiloghi mensile/settimanale/trimestrale/annuale, dashboard.
 
-## Cosa contiene lo ZIP
-- `index.html`, `style.css`, `script.js` (frontend)
-- `supabase_schema.sql` (schema DB, RLS, policy)
-- `README_3.8_SETUP.md` (guida passo-passo)
+## Setup rapido
+1) Carica su GitHub questi 4 file (`index.html`, `style.css`, `script.js`, `README.md`) e fai **Redeploy** su Vercel.
+2) (Opzionale) Configura Supabase e imposta in `script.js`:
+   ```js
+   const SUPABASE_URL = "https://TUO-PROGETTO.supabase.co";
+   const SUPABASE_ANON_KEY = "LA-TUA-ANON-KEY";
+   ```
+3) **Senza Supabase** l'app funziona in locale; il Login apre il modale ma la sincronizzazione resta disattivata.
 
-## Requisiti
-- Account **Supabase** (free)
-- URL del progetto e **anon key**
-
-## Note privacy
-- I dati sono isolati per utente tramite **Row Level Security (RLS)**.
-- Tutto il traffico è su **HTTPS**.
-- Questa è la versione **minima** (Step A). La cifratura end‑to‑end (client‑side) può essere aggiunta come Step B.
-
-Build: 2025-08-31_091842
+Build: 2025-08-31_101218

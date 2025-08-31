@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Kakebo App v3.8 (Login + Sync)</title>
+  <title>Kakebo App v3.8.1 (Login + Sync base)</title>
   <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
@@ -118,7 +118,7 @@
         </div>
       </section>
 
-      <!-- Riepiloghi e dashboard identici a v3.7 -->
+      <!-- Riepilogo mensile -->
       <section id="sezione-riepilogo" class="hidden">
         <div class="filters">
           <label>Mese
@@ -127,18 +127,16 @@
           <button id="btn-pdf-mensile" class="secondary">Esporta PDF</button>
           <button id="btn-csv-mensile" class="secondary">Esporta CSV</button>
         </div>
-
         <div id="riepilogo-risultati">
           <h2>Totali per macro area (mese selezionato)</h2>
           <ul id="totali-macro"></ul>
-
           <h3>Saldo mese (entrate – spese)</h3>
           <p id="saldo-mese">—</p>
-
           <p class="hint">Nota: il mutuo è escluso dai totali settimanali, ma è incluso nel totale spese mensile qui indicato come voce separata.</p>
         </div>
       </section>
 
+      <!-- Riepilogo settimanale -->
       <section id="sezione-riepilogo-sett" class="hidden">
         <div class="filters">
           <label>Mese
@@ -163,6 +161,7 @@
         <p class="hint">Regola contabile lun–mer/gio–dom. Il mutuo è escluso dai totali settimanali.</p>
       </section>
 
+      <!-- Riepilogo trimestrale -->
       <section id="sezione-riepilogo-tri" class="hidden">
         <div class="filters">
           <label>Anno
@@ -188,6 +187,7 @@
         </div>
       </section>
 
+      <!-- Riepilogo annuale -->
       <section id="sezione-riepilogo-ann" class="hidden">
         <div class="filters">
           <label>Anno
@@ -223,6 +223,7 @@
         </div>
       </section>
 
+      <!-- Dashboard -->
       <section id="sezione-dashboard" class="hidden">
         <div class="filters">
           <label>Mese
@@ -239,14 +240,15 @@
   </main>
 
   <footer>
-    <small>v3.8 — Login + Sync base — build 2025-08-31_091842. Dati locali + Sync cloud opzionale.</small>
+    <small>v3.8.1 — Login + Sync base — build 2025-08-31_101218. Dati locali + Sync cloud opzionale.</small>
   </footer>
 
-  <script src="script.js"></script>
-  <!-- libs -->
+  <!-- libs first -->
   <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <!-- supabase -->
+  <!-- supabase BEFORE app script -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <!-- app -->
+  <script src="script.js"></script>
 </body>
 </html>
