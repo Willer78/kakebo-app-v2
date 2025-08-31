@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Kakebo App v3.8.7 (INLINE)</title>
+  <title>Kakebo App v3.8.8 (INLINE)</title>
   <meta name="theme-color" content="#2563eb"/>
   <style>
   :root{--bg:#f7f7fb;--fg:#222;--muted:#6b7280;--card:#fff;--border:#e5e7eb;--accent:#2563eb;--tab:#374151;--tab-active:#2563eb}
@@ -27,14 +27,17 @@
   ul{list-style:disc;padding-left:20px} footer{padding:16px 20px;color:var(--muted)} .hint{color:var(--muted);font-size:13px}
   .header-right{display:flex;align-items:center;gap:8px}
   #theme-toggle{padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--fg);cursor:pointer}
-  .chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px}
+  .chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
   canvas{max-width:100%}
+  .legend{display:flex;gap:12px;flex-wrap:wrap}
+  .legend-item{display:flex;align-items:center;gap:6px}
+  .color-dot{width:10px;height:10px;border-radius:50%}
   </style>
 </head>
 <body>
   <header>
     <div class="header-left">
-      <h1>Kakebo – Gestione Spese (v3.8.7 inline)</h1>
+      <h1>Kakebo – Gestione Spese (v3.8.8 inline)</h1>
       <nav>
         <button id="tab-inserimento" class="tab active">Inserimento dati</button>
         <button id="tab-riepilogo" class="tab">Riepilogo mensile</button>
@@ -146,23 +149,23 @@
       <div class="filters">
         <label>Mese <input type="month" id="mese-dashboard"/></label>
       </div>
-      <h2>Spese per macro (mese selezionato)</h2>
+      <h2>Spese per macro (escluso mutuo)</h2>
       <div class="chart-wrap">
-        <canvas id="chart" width="700" height="320" aria-label="Grafico spese per macro"></canvas>
+        <canvas id="chart" width="480" height="300" aria-label="Torta spese per macro (no mutuo)"></canvas>
+        <div class="legend" id="legend"></div>
       </div>
-      <p class="hint">Grafico generato senza librerie esterne.</p>
+      <p class="hint">La torta mostra solo le spese non-mutuo del mese selezionato, ripartite tra Sopravvivenza, Optional, Cultura e Extra.</p>
     </section>
   </main>
 
-  <footer><small>v3.8.7 inline – build 2025-08-31 17:22:16</small></footer>
+  <footer><small>v3.8.8 inline – build 2025-08-31 17:34:23</small></footer>
 
   <script>
-  // ===== Tema (day/night) =====
+  // ===== Tema =====
   (function(){
     const saved = localStorage.getItem("kakebo_theme") || "light";
     document.documentElement.setAttribute("data-theme", saved);
-    const btn = document.getElementById("theme-toggle");
-    btn?.addEventListener("click", ()=>{
+    document.getElementById("theme-toggle")?.addEventListener("click", ()=>{
       const cur=document.documentElement.getAttribute("data-theme");
       const next=cur==="light"?"dark":"light";
       document.documentElement.setAttribute("data-theme", next);
@@ -288,63 +291,83 @@
   inputMeseSett.addEventListener('change', aggiornaRiepilogoSettimanale);
 
   // ===== Trimestrale =====
-  const inputAnnoTri=$("#anno-tri"); (function(){ const d=new Date(); inputAnnoTri.value=d.getFullYear(); })();
-  function aggiornaRiepilogoTrimestri(){ const year=parseInt(inputAnnoTri.value,10); const tbody=document.querySelector("#tabella-riepilogo-tri tbody"); tbody.innerHTML="";
+  const inputAnnoTri=$("#anno-tri"); (function(){ const d=new Date(); if(inputAnnoTri) inputAnnoTri.value=d.getFullYear(); })();
+  function aggiornaRiepilogoTrimestri(){ const year=parseInt(inputAnnoTri.value,10); const tbody=document.querySelector("#tabella-riepilogo-tri tbody"); if(!tbody) return; tbody.innerHTML="";
     for(let q=1;q<=4;q++){ const startMonth=(q-1)*3; const start=new Date(year,startMonth,1); const end=new Date(year,startMonth+3,0);
       let entrate=0,spese=0,mutuo=0;
       MOVIMENTI.forEach(m=>{ if(!m.data) return; const d=parseDate(m.data); if(d>=start && d<=end){ if(m.tipo==="entrata") entrate+=Number(m.importo); else if(m.tipo==="mutuo"){ spese+=Number(m.importo); mutuo+=Number(m.importo); } else spese+=Number(m.importo); } });
       const tr=document.createElement('tr'); tr.innerHTML=`<td>Q${q}</td><td>${start.toLocaleDateString()}–${end.toLocaleDateString()}</td><td>${fmt(entrate)}</td><td>${fmt(spese)}</td><td>${fmt(mutuo)}</td><td>${fmt(entrate-spese)}</td>`; tbody.appendChild(tr);
     }
   }
-  inputAnnoTri.addEventListener('change', aggiornaRiepilogoTrimestri);
+  inputAnnoTri?.addEventListener('change', aggiornaRiepilogoTrimestri);
 
   // ===== Annuale =====
-  const inputAnnoAnn=$("#anno-ann"); (function(){ const d=new Date(); inputAnnoAnn.value=d.getFullYear(); })();
+  const inputAnnoAnn=$("#anno-ann"); (function(){ const d=new Date(); if(inputAnnoAnn) inputAnnoAnn.value=d.getFullYear(); })();
   function monthLabel(i){return ["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"][i];}
-  function aggiornaRiepilogoAnnuale(){ const year=parseInt(inputAnnoAnn.value,10); const tbody=document.querySelector("#tabella-riepilogo-ann tbody"); tbody.innerHTML="";
+  function aggiornaRiepilogoAnnuale(){ const year=parseInt(inputAnnoAnn.value,10); const tbody=document.querySelector("#tabella-riepilogo-ann tbody"); if(!tbody) return; tbody.innerHTML="";
     let totE=0,totS=0,totM=0,totSaldo=0,montante=0;
     for(let m=0;m<12;m++){ const start=new Date(year,m,1), end=new Date(year,m+1,0);
-      let E=0,S=0,M=0; MOVIMENTI.forEach(v=>{ if(!v.data) return; const d=parseDate(v.data); if(d>=start && d<=end){ if(v.tipo==="entrata") E+=Number(v.importo); else if(v.tipo==="mutuo"){ S+=Number(v.importo); M+=Number(v.importo); } else S+=Number(v.importo); } });
+      let E=0,S=0,M=0; (MOVIMENTI||[]).forEach(v=>{ if(!v.data) return; const d=parseDate(v.data); if(d>=start && d<=end){ if(v.tipo==="entrata") E+=Number(v.importo); else if(v.tipo==="mutuo"){ S+=Number(v.importo); M+=Number(v.importo); } else S+=Number(v.importo); } });
       const saldo=E-S; montante+=saldo; totE+=E; totS+=S; totM+=M; totSaldo+=saldo;
       const tr=document.createElement('tr'); tr.innerHTML=`<td>${monthLabel(m)}</td><td>${fmt(E)}</td><td>${fmt(S)}</td><td>${fmt(M)}</td><td>${fmt(saldo)}</td><td>${fmt(montante)}</td>`; tbody.appendChild(tr);
     }
-    document.getElementById("ann-tot-entrate").textContent=fmt(totE);
-    document.getElementById("ann-tot-spese").textContent=fmt(totS);
-    document.getElementById("ann-tot-mutuo").textContent=fmt(totM);
-    document.getElementById("ann-tot-saldo").textContent=fmt(totSaldo);
-    document.getElementById("ann-tot-montante").textContent=fmt(montante);
+    document.getElementById("ann-tot-entrate")?.textContent=fmt(totE);
+    document.getElementById("ann-tot-spese")?.textContent=fmt(totS);
+    document.getElementById("ann-tot-mutuo")?.textContent=fmt(totM);
+    document.getElementById("ann-tot-saldo")?.textContent=fmt(totSaldo);
+    document.getElementById("ann-tot-montante")?.textContent=fmt(montante);
   }
-  inputAnnoAnn.addEventListener('change', aggiornaRiepilogoAnnuale);
+  inputAnnoAnn?.addEventListener('change', aggiornaRiepilogoAnnuale);
 
-  // ===== Dashboard (Canvas bar chart) =====
+  // ===== Dashboard (Pie chart, exclude mutuo) =====
   const inputMeseDash=$("#mese-dashboard"); (function(){ const d=new Date(); inputMeseDash.value=`${d.getFullYear()}-${pad(d.getMonth()+1)}`; })();
-  function drawBarChart(ctx, labels, data){
-    const W=ctx.canvas.width, H=ctx.canvas.height;
+  const COLORS = ["#60a5fa","#34d399","#fbbf24","#f87171"]; // blu, verde, giallo, rosso tenue
+  function drawPie(ctx, values, labels){
+    const W=ctx.canvas.width, H=ctx.canvas.height; const cx=W/2, cy=H/2, r=Math.min(W,H)*0.35;
     ctx.clearRect(0,0,W,H);
-    // axes
-    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--fg') || '#222';
-    ctx.fillStyle = ctx.strokeStyle;
-    ctx.lineWidth=1;
-    ctx.beginPath(); ctx.moveTo(50,10); ctx.lineTo(50,H-40); ctx.lineTo(W-10,H-40); ctx.stroke();
-    const max = Math.max(10, ...data);
-    const barW = (W-70)/labels.length - 10;
-    data.forEach((v,i)=>{
-      const x = 60 + i*(barW+10);
-      const h = Math.round((H-60) * (v/max));
-      const y = (H-40) - h;
-      ctx.fillRect(x,y,barW,h);
-      ctx.fillText(labels[i], x, H-20);
-      ctx.fillText((v).toFixed(0), x, y-5);
+    const total = values.reduce((a,b)=>a+b,0);
+    let start= -Math.PI/2;
+    values.forEach((v,i)=>{
+      const ang = total>0 ? (v/total)*Math.PI*2 : 0;
+      ctx.beginPath();
+      ctx.moveTo(cx,cy);
+      ctx.fillStyle=COLORS[i%COLORS.length];
+      ctx.arc(cx,cy,r,start,start+ang);
+      ctx.closePath();
+      ctx.fill();
+      // percent label
+      const mid = start + ang/2;
+      const lx = cx + Math.cos(mid)*(r+14);
+      const ly = cy + Math.sin(mid)*(r+14);
+      const perc = total>0 ? Math.round((v/total)*100) : 0;
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--fg') || '#222';
+      ctx.font="12px system-ui, Arial";
+      ctx.textAlign="center"; ctx.textBaseline="middle";
+      ctx.fillText(`${perc}%`, lx, ly);
+      start += ang;
+    });
+    // legend
+    const legend = document.getElementById("legend"); legend.innerHTML="";
+    labels.forEach((lab,i)=>{
+      const item=document.createElement("div"); item.className="legend-item";
+      const dot=document.createElement("span"); dot.className="color-dot"; dot.style.background=COLORS[i%COLORS.length];
+      const text=document.createElement("span"); text.textContent=`${lab}`;
+      legend.appendChild(item); item.appendChild(dot); item.appendChild(text);
     });
   }
   function aggiornaDashboard(){
     const prefix=inputMeseDash.value;
     const mvs=(MOVIMENTI||[]).filter(m=>(m.data||"").startsWith(prefix));
-    const keys=["Sopravvivenza","Optional","Cultura","Extra","Mutuo"];
-    const val={Sopravvivenza:0,Optional:0,Cultura:0,Extra:0,Mutuo:0};
-    mvs.forEach(m=>{ if(m.tipo==="spesa"){ val[m.macro]=(val[m.macro]||0)+Number(m.importo); } else if(m.tipo==="mutuo"){ val.Mutuo+=Number(m.importo); } });
-    const canvas=document.getElementById("chart"); const ctx=canvas.getContext("2d");
-    drawBarChart(ctx, keys, keys.map(k=>val[k]||0));
+    const labs=["Sopravvivenza","Optional","Cultura","Extra"];
+    const values=[0,0,0,0];
+    mvs.forEach(m=>{
+      if(m.tipo==="spesa"){ // esclude mutuo ed entrate
+        const idx = labs.indexOf(m.macro||"");
+        if(idx>=0) values[idx]+=Number(m.importo);
+      }
+    });
+    const ctx=document.getElementById("chart").getContext("2d");
+    drawPie(ctx, values, labs);
   }
   inputMeseDash.addEventListener('change', aggiornaDashboard);
 
