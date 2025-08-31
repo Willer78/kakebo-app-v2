@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-  <title>Kakebo App v3.8.9 – Export Light</title>
+  <title>Kakebo App v3.9.0 – Print/PDF</title>
   <meta name="theme-color" content="#2563eb"/>
   <style>
   :root{
@@ -22,7 +22,7 @@
   .page{min-height:calc(100dvh - 120px); overflow:auto}
   .menu-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
   .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px}
-  .btn{display:flex;align-items:center;justify-content:center;gap:10px;border:0;border-radius:16px;padding:10px 14px;font-size:14px;cursor:pointer;color:#111;min-height:42px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:12px;padding:10px 12px;font-size:14px;cursor:pointer;color:#111;min-height:38px}
   .btn:active{transform:translateY(1px)}
   .btn-blue{background:var(--blue)} .btn-green{background:var(--green)} .btn-yellow{background:var(--yellow)} .btn-red{background:var(--red)}
   .btn-purple{background:var(--purple)} .btn-slate{background:var(--slate); color:#fff}
@@ -34,8 +34,9 @@
   input,select{padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg)}
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
   table{width:100%;border-collapse:collapse}
-  th,td{padding:10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
-  .table-wrap{overflow:auto;-webkit-overflow-scrolling:touch}
+  th,td{padding:10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;background:var(--card)}
+  .table-wrap{overflow:auto;-webkit-overflow-scrolling:touch;max-height:60vh;border:1px solid var(--border);border-radius:12px}
+  thead th{position:sticky; top:0; z-index:1; background:var(--card)}
   #theme-toggle{padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--fg);cursor:pointer}
   .section-title{margin:8px 0 12px 0}
   .legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;justify-content:center}
@@ -45,12 +46,30 @@
   canvas{max-width:100%;height:auto;display:block}
   .landscape-tip{display:none;margin-bottom:8px;color:var(--muted)}
   @media (orientation:portrait){ .landscape-tip{display:block} }
-  @media (max-width:360px){ .btn{font-size:13px; padding:10px 10px; min-height:40px} }
+  @media (max-width:360px){ .btn{font-size:13px; padding:8px 10px; min-height:36px} }
+
+  /* ===== Print Styles ===== */
+  @media print {
+    :root{ --bg:#fff; --fg:#000; --card:#fff; --border:#ddd }
+    body{ background:#fff; color:#000 }
+    header, footer, .no-print { display:none !important; }
+    main{ padding:0 }
+    .page{ display:block !important; min-height:auto; overflow:visible }
+    .card{ border:0; padding:0 }
+    .toolbar{ display:none }
+    .table-wrap{ max-height:none; overflow:visible; border:0 }
+    thead th{ position:sticky; top:auto }
+    /* Show only the printing page */
+    .page{ display:none }
+    .page.printing{ display:block }
+    h2.section-title{ margin:0 0 8px 0 }
+    .muted{ color:#444 }
+  }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Kakebo – v3.8.9</h1>
+  <header class="no-print">
+    <h1>Kakebo – v3.9.0</h1>
     <button id="theme-toggle" title="Tema">🌙/☀️</button>
   </header>
 
@@ -90,7 +109,7 @@
         </div>
       </div>
       <div style="height:12px"></div>
-      <button class="btn" onclick="goto('page-home')">⬅️ Torna a Home</button>
+      <button class="btn no-print" onclick="goto('page-home')">⬅️ Torna a Home</button>
     </section>
 
     <!-- FORM UNICO -->
@@ -121,7 +140,7 @@
             <input type="text" id="nota" maxlength="120" placeholder="es. pranzo lavoro, regalo, bolletta…"/>
           </label>
         </div>
-        <div class="toolbar">
+        <div class="toolbar no-print">
           <button class="btn btn-accent" type="submit">✅ Salva</button>
           <button class="btn" type="button" id="pulisci">🧹 Pulisci</button>
           <button class="btn" type="button" onclick="goto('page-insert-chooser')">⬅️ Indietro</button>
@@ -134,10 +153,11 @@
       <h2 class="section-title">Movimenti</h2>
       <div class="card">
         <p class="landscape-tip">Suggerimento: per vedere più colonne, ruota il telefono in orizzontale.</p>
-        <div class="toolbar">
+        <div class="toolbar no-print">
           <button class="btn" onclick="goto('page-home')">⬅️ Home</button>
           <button class="btn btn-accent" onclick="goto('page-insert-chooser')">➕ Nuovo</button>
           <button class="btn" id="export-movimenti">⬇️ Esporta CSV</button>
+          <button class="btn" id="print-movimenti">🖨️ Stampa / PDF</button>
           <button class="btn" id="backup-json">💾 Esporta JSON</button>
           <input type="file" id="import-json-input" accept="application/json" class="hidden"/>
           <button class="btn" id="import-json">📥 Importa JSON</button>
@@ -156,9 +176,10 @@
     <section id="page-riepilogo-mese" class="page hidden">
       <h2 class="section-title">Riepilogo mensile</h2>
       <div class="card">
-        <div class="toolbar">
+        <div class="toolbar no-print">
           <label>Mese <input type="month" id="mese-riepilogo"/></label>
           <button class="btn" id="export-mensile">⬇️ Esporta CSV</button>
+          <button class="btn" id="print-mensile">🖨️ Stampa / PDF</button>
           <button class="btn" onclick="goto('page-home')">⬅️ Home</button>
         </div>
         <h3>Totali per macro</h3>
@@ -173,9 +194,10 @@
     <section id="page-riepilogo-sett" class="page hidden">
       <h2 class="section-title">Riepilogo settimanale</h2>
       <div class="card">
-        <div class="toolbar">
+        <div class="toolbar no-print">
           <label>Mese <input type="month" id="mese-riepilogo-sett"/></label>
           <button class="btn" id="export-sett">⬇️ Esporta CSV</button>
+          <button class="btn" id="print-sett">🖨️ Stampa / PDF</button>
           <button class="btn" onclick="goto('page-home')">⬅️ Home</button>
         </div>
         <div class="table-wrap">
@@ -191,9 +213,10 @@
     <section id="page-riepilogo-tri" class="page hidden">
       <h2 class="section-title">Riepilogo trimestrale</h2>
       <div class="card">
-        <div class="toolbar">
+        <div class="toolbar no-print">
           <label>Anno <input type="number" id="anno-tri" min="2000" step="1"/></label>
           <button class="btn" id="export-tri">⬇️ Esporta CSV</button>
+          <button class="btn" id="print-tri">🖨️ Stampa / PDF</button>
           <button class="btn" onclick="goto('page-home')">⬅️ Home</button>
         </div>
         <div class="table-wrap">
@@ -209,9 +232,10 @@
     <section id="page-riepilogo-ann" class="page hidden">
       <h2 class="section-title">Riepilogo annuale</h2>
       <div class="card">
-        <div class="toolbar">
+        <div class="toolbar no-print">
           <label>Anno <input type="number" id="anno-ann" min="2000" step="1"/></label>
           <button class="btn" id="export-ann">⬇️ Esporta CSV</button>
+          <button class="btn" id="print-ann">🖨️ Stampa / PDF</button>
           <button class="btn" onclick="goto('page-home')">⬅️ Home</button>
         </div>
         <div class="table-wrap">
@@ -228,7 +252,7 @@
     <section id="page-dashboard" class="page hidden">
       <h2 class="section-title">Dashboard</h2>
       <div class="card chart-box">
-        <div class="toolbar">
+        <div class="toolbar no-print">
           <label>Mese <input type="month" id="mese-dashboard"/></label>
           <button class="btn" onclick="goto('page-home')">⬅️ Home</button>
         </div>
@@ -240,7 +264,7 @@
     </section>
   </main>
 
-  <footer><small>v3.8.9 – build 2025-08-31 20:05:59</small></footer>
+  <footer class="no-print"><small>v3.9.0 – build 2025-08-31 20:16:17</small></footer>
 
   <script>
   // ===== Tema =====
@@ -264,6 +288,21 @@
     if(id==='page-dashboard'){ resizeAndDrawChart(); }
   }
   document.querySelectorAll("[data-goto]").forEach(b=>b.addEventListener("click", ()=> goto(b.getAttribute("data-goto")) ));
+
+  // ===== Print helpers =====
+  function printSection(sectionId, title){
+    const section = document.getElementById(sectionId);
+    if(!section) return;
+    // mark printing section
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('printing'));
+    section.classList.add('printing');
+    // set temporary title for print header/footer of browser
+    const oldTitle = document.title;
+    document.title = "Kakebo – " + title;
+    window.print();
+    document.title = oldTitle;
+    section.classList.remove('printing');
+  }
 
   // ===== Dati e util =====
   const CATEGORIE = {
@@ -404,12 +443,12 @@
     (MOVIMENTI||[]).forEach(m=> rows.push([m.data,m.tipo,m.macro||"",m.categoria||"",Number(m.importo).toFixed(2),m.nota||""]));
     downloadFile("movimenti.csv", toCSV(rows), "text/csv;charset=utf-8");
   });
+  document.getElementById("print-movimenti").addEventListener("click", ()=> printSection('page-movimenti', 'Movimenti') );
 
   // Backup JSON
   document.getElementById("backup-json").addEventListener("click", ()=>{
     downloadFile("kakebo-backup.json", JSON.stringify(MOVIMENTI, null, 2), "application/json");
   });
-
   // Import JSON
   document.getElementById("import-json").addEventListener("click", ()=> document.getElementById("import-json-input").click() );
   document.getElementById("import-json-input").addEventListener("change", (ev)=>{
@@ -445,8 +484,6 @@
     const saldo=entrate-spese; document.getElementById("saldo-mese").textContent=`Entrate: € ${entrate.toFixed(2)} – Spese: € ${spese.toFixed(2)} → Saldo: € ${saldo.toFixed(2)}`;
   }
   inputMese?.addEventListener("change", aggiornaRiepilogo);
-
-  // Export Mensile CSV
   document.getElementById("export-mensile").addEventListener("click", ()=>{
     const month = inputMese.value || "";
     const delmese=(MOVIMENTI||[]).filter(m=>(m.data||"").startsWith(month));
@@ -462,6 +499,7 @@
     rows.push([]); rows.push(["Entrate",entrate.toFixed(2)]); rows.push(["Spese",spese.toFixed(2)]); rows.push(["Saldo",(entrate-spese).toFixed(2)]);
     downloadFile(`riepilogo-mensile-${month}.csv`, toCSV(rows), "text/csv;charset=utf-8");
   });
+  document.getElementById("print-mensile").addEventListener("click", ()=> printSection('page-riepilogo-mese', 'Riepilogo mensile') );
 
   // ===== RIEPILOGO SETTIMANALE =====
   const inputMeseSett=document.getElementById("mese-riepilogo-sett");
@@ -479,8 +517,6 @@
     }
   }
   inputMeseSett?.addEventListener("change", aggiornaRiepilogoSettimanale);
-
-  // Export Settimanale CSV
   document.getElementById("export-sett").addEventListener("click", ()=>{
     const month = inputMeseSett.value || "";
     const [Y,M]=month?month.split("-").map(Number):[null,null];
@@ -495,6 +531,7 @@
     }
     downloadFile(`riepilogo-settimanale-${month}.csv`, toCSV(rows), "text/csv;charset=utf-8");
   });
+  document.getElementById("print-sett").addEventListener("click", ()=> printSection('page-riepilogo-sett', 'Riepilogo settimanale') );
 
   // ===== TRIMESTRALE =====
   const inputAnnoTri=document.getElementById("anno-tri");
@@ -508,8 +545,6 @@
     }
   }
   inputAnnoTri?.addEventListener('change', aggiornaRiepilogoTrimestri);
-
-  // Export Trimestrale CSV
   document.getElementById("export-tri").addEventListener("click", ()=>{
     const year = parseInt(inputAnnoTri.value,10); if(!year) return;
     const rows=[["Trimestre","Periodo","Entrate","Spese","Mutuo","Saldo"]];
@@ -520,6 +555,7 @@
     }
     downloadFile(`riepilogo-trimestrale-${year}.csv`, toCSV(rows), "text/csv;charset=utf-8");
   });
+  document.getElementById("print-tri").addEventListener("click", ()=> printSection('page-riepilogo-tri', 'Riepilogo trimestrale') );
 
   // ===== ANNUALE =====
   const inputAnnoAnn=document.getElementById("anno-ann");
@@ -540,8 +576,6 @@
     document.getElementById("ann-tot-montante").textContent=fmt(montante);
   }
   inputAnnoAnn?.addEventListener('change', aggiornaRiepilogoAnnuale);
-
-  // Export Annuale CSV
   document.getElementById("export-ann").addEventListener("click", ()=>{
     const year = parseInt(inputAnnoAnn.value,10); if(!year) return;
     const rows=[["Mese","Entrate","Spese","Mutuo","Saldo","Montante Accumulato"]];
@@ -553,6 +587,7 @@
     }
     downloadFile(`riepilogo-annuale-${year}.csv`, toCSV(rows), "text/csv;charset=utf-8");
   });
+  document.getElementById("print-ann").addEventListener("click", ()=> printSection('page-riepilogo-ann', 'Riepilogo annuale') );
 
   // ===== DASHBOARD (torta, responsive, senza mutuo) =====
   const inputMeseDash=document.getElementById("mese-dashboard");
@@ -615,6 +650,10 @@
   // ===== Boot =====
   function aggiornaTutti(){ aggiornaRiepilogo(); aggiornaRiepilogoSettimanale(); aggiornaRiepilogoTrimestri(); aggiornaRiepilogoAnnuale(); aggiornaDashboard(); renderTabella(); }
   goto('page-home'); aggiornaTutti();
+
+  // Attach print buttons
+  document.getElementById("print-tri").addEventListener("click", ()=> printSection('page-riepilogo-tri','Riepilogo trimestrale') );
+  document.getElementById("print-ann").addEventListener("click", ()=> printSection('page-riepilogo-ann','Riepilogo annuale') );
   </script>
 </body>
 </html>
