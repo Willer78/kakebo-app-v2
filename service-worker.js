@@ -1,6 +1,6 @@
-const CACHE='kakebo-v1';
+const CACHE='kakebo-v3.8.3';
 self.addEventListener('install', e=>{ self.skipWaiting(); });
 self.addEventListener('activate', e=>{ clients.claim(); });
 self.addEventListener('fetch', e=>{
-  // Pass-through; pronto per cache futura
+  // no caching to avoid stale assets during dev
 });
