@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-  <title>Kakebo App v3.8.8.1 – Mobile Fix</title>
+  <title>Kakebo App v3.8.9 – Export Light</title>
   <meta name="theme-color" content="#2563eb"/>
   <style>
   :root{
@@ -19,10 +19,10 @@
   main{padding:16px;padding-bottom:24px}
   footer{padding:12px 16px;color:var(--muted)}
   .hidden{display:none}
-  .page{min-height:calc(100dvh - 120px); /* header+footer approx */ overflow:auto}
+  .page{min-height:calc(100dvh - 120px); overflow:auto}
   .menu-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
   .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px}
-  .btn{display:flex;align-items:center;justify-content:center;gap:10px;border:0;border-radius:16px;padding:18px 14px;font-size:16px;cursor:pointer;color:#111;min-height:64px}
+  .btn{display:flex;align-items:center;justify-content:center;gap:10px;border:0;border-radius:16px;padding:10px 14px;font-size:14px;cursor:pointer;color:#111;min-height:42px}
   .btn:active{transform:translateY(1px)}
   .btn-blue{background:var(--blue)} .btn-green{background:var(--green)} .btn-yellow{background:var(--yellow)} .btn-red{background:var(--red)}
   .btn-purple{background:var(--purple)} .btn-slate{background:var(--slate); color:#fff}
@@ -41,23 +41,16 @@
   .legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;justify-content:center}
   .legend-item{display:flex;align-items:center;gap:6px}
   .dot{width:10px;height:10px;border-radius:50%}
-  /* Dashboard centering */
   .chart-box{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
   canvas{max-width:100%;height:auto;display:block}
-  /* Landscape tip for Movimenti (only portrait) */
   .landscape-tip{display:none;margin-bottom:8px;color:var(--muted)}
-  @media (orientation:portrait){
-    .landscape-tip{display:block}
-  }
-  /* Avoid button overflow on very small devices */
-  @media (max-width:360px){
-    .btn{font-size:14px; padding:14px 12px; min-height:56px}
-  }
+  @media (orientation:portrait){ .landscape-tip{display:block} }
+  @media (max-width:360px){ .btn{font-size:13px; padding:10px 10px; min-height:40px} }
   </style>
 </head>
 <body>
   <header>
-    <h1>Kakebo – v3.8.8.1</h1>
+    <h1>Kakebo – v3.8.9</h1>
     <button id="theme-toggle" title="Tema">🌙/☀️</button>
   </header>
 
@@ -144,6 +137,10 @@
         <div class="toolbar">
           <button class="btn" onclick="goto('page-home')">⬅️ Home</button>
           <button class="btn btn-accent" onclick="goto('page-insert-chooser')">➕ Nuovo</button>
+          <button class="btn" id="export-movimenti">⬇️ Esporta CSV</button>
+          <button class="btn" id="backup-json">💾 Esporta JSON</button>
+          <input type="file" id="import-json-input" accept="application/json" class="hidden"/>
+          <button class="btn" id="import-json">📥 Importa JSON</button>
           <button class="btn btn-slate" id="cancella-tutto">🗑️ Svuota archivio</button>
         </div>
         <div class="table-wrap">
@@ -161,6 +158,7 @@
       <div class="card">
         <div class="toolbar">
           <label>Mese <input type="month" id="mese-riepilogo"/></label>
+          <button class="btn" id="export-mensile">⬇️ Esporta CSV</button>
           <button class="btn" onclick="goto('page-home')">⬅️ Home</button>
         </div>
         <h3>Totali per macro</h3>
@@ -177,6 +175,7 @@
       <div class="card">
         <div class="toolbar">
           <label>Mese <input type="month" id="mese-riepilogo-sett"/></label>
+          <button class="btn" id="export-sett">⬇️ Esporta CSV</button>
           <button class="btn" onclick="goto('page-home')">⬅️ Home</button>
         </div>
         <div class="table-wrap">
@@ -194,6 +193,7 @@
       <div class="card">
         <div class="toolbar">
           <label>Anno <input type="number" id="anno-tri" min="2000" step="1"/></label>
+          <button class="btn" id="export-tri">⬇️ Esporta CSV</button>
           <button class="btn" onclick="goto('page-home')">⬅️ Home</button>
         </div>
         <div class="table-wrap">
@@ -211,6 +211,7 @@
       <div class="card">
         <div class="toolbar">
           <label>Anno <input type="number" id="anno-ann" min="2000" step="1"/></label>
+          <button class="btn" id="export-ann">⬇️ Esporta CSV</button>
           <button class="btn" onclick="goto('page-home')">⬅️ Home</button>
         </div>
         <div class="table-wrap">
@@ -239,7 +240,7 @@
     </section>
   </main>
 
-  <footer><small>v3.8.8.1 – build 2025-08-31 19:59:12</small></footer>
+  <footer><small>v3.8.9 – build 2025-08-31 20:05:59</small></footer>
 
   <script>
   // ===== Tema =====
@@ -379,6 +380,56 @@
     if(confirm("Svuotare l'archivio locale?")){ MOVIMENTI=[]; salva(); renderTabella(); aggiornaTutti(); }
   });
 
+  // ===== CSV/JSON helpers =====
+  function downloadFile(filename, content, mime){
+    const blob = new Blob([content], {type: mime});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download=filename; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url), 500);
+  }
+  function toCSV(rows){
+    const esc = (v)=>{
+      if(v==null) return "";
+      const s = String(v).replace(/\r?\n/g, " ");
+      if(/[;" ,]/.test(s)) return '"' + s.replace(/"/g,'""') + '"';
+      return s;
+    };
+    const lines = rows.map(r=> r.map(esc).join(";") );
+    return "\ufeff" + lines.join("\n"); // BOM for Excel
+  }
+
+  // Export Movimenti
+  document.getElementById("export-movimenti").addEventListener("click", ()=>{
+    const rows = [["Data","Tipo","Macro","Categoria","Importo","Nota"]];
+    (MOVIMENTI||[]).forEach(m=> rows.push([m.data,m.tipo,m.macro||"",m.categoria||"",Number(m.importo).toFixed(2),m.nota||""]));
+    downloadFile("movimenti.csv", toCSV(rows), "text/csv;charset=utf-8");
+  });
+
+  // Backup JSON
+  document.getElementById("backup-json").addEventListener("click", ()=>{
+    downloadFile("kakebo-backup.json", JSON.stringify(MOVIMENTI, null, 2), "application/json");
+  });
+
+  // Import JSON
+  document.getElementById("import-json").addEventListener("click", ()=> document.getElementById("import-json-input").click() );
+  document.getElementById("import-json-input").addEventListener("change", (ev)=>{
+    const file = ev.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      try{
+        const data = JSON.parse(reader.result);
+        if(!Array.isArray(data)) throw new Error("Formato non valido");
+        if(!confirm("Importare il file selezionato? Questa azione sovrascriverà i movimenti attuali.")) return;
+        MOVIMENTI = data;
+        salva(); renderTabella(); aggiornaTutti();
+        alert("Import completato.");
+      }catch(e){ alert("Errore nell'import: " + e.message); }
+    };
+    reader.readAsText(file);
+    ev.target.value="";
+  });
+
   // ===== RIEPILOGO MENSILE =====
   const inputMese=document.getElementById("mese-riepilogo");
   (function(){ const d=new Date(); if(inputMese) inputMese.value=`${d.getFullYear()}-${pad(d.getMonth()+1)}`; })();
@@ -394,6 +445,23 @@
     const saldo=entrate-spese; document.getElementById("saldo-mese").textContent=`Entrate: € ${entrate.toFixed(2)} – Spese: € ${spese.toFixed(2)} → Saldo: € ${saldo.toFixed(2)}`;
   }
   inputMese?.addEventListener("change", aggiornaRiepilogo);
+
+  // Export Mensile CSV
+  document.getElementById("export-mensile").addEventListener("click", ()=>{
+    const month = inputMese.value || "";
+    const delmese=(MOVIMENTI||[]).filter(m=>(m.data||"").startsWith(month));
+    const tot = {"Sopravvivenza":0,"Optional":0,"Cultura":0,"Extra":0,"Mutuo":0,"Altro":0};
+    let entrate=0, spese=0;
+    delmese.forEach(m=>{
+      if(m.tipo==="entrata") entrate+=Number(m.importo);
+      else if(m.tipo==="mutuo"){ spese+=Number(m.importo); tot["Mutuo"]+=Number(m.importo); }
+      else { spese+=Number(m.importo); tot[m.macro||"Altro"]+=Number(m.importo); }
+    });
+    const rows=[["Mese",month],[],["Macro","Totale"]];
+    Object.keys(tot).forEach(k=>{ if(tot[k]>0) rows.push([k, tot[k].toFixed(2)]) });
+    rows.push([]); rows.push(["Entrate",entrate.toFixed(2)]); rows.push(["Spese",spese.toFixed(2)]); rows.push(["Saldo",(entrate-spese).toFixed(2)]);
+    downloadFile(`riepilogo-mensile-${month}.csv`, toCSV(rows), "text/csv;charset=utf-8");
+  });
 
   // ===== RIEPILOGO SETTIMANALE =====
   const inputMeseSett=document.getElementById("mese-riepilogo-sett");
@@ -412,6 +480,22 @@
   }
   inputMeseSett?.addEventListener("change", aggiornaRiepilogoSettimanale);
 
+  // Export Settimanale CSV
+  document.getElementById("export-sett").addEventListener("click", ()=>{
+    const month = inputMeseSett.value || "";
+    const [Y,M]=month?month.split("-").map(Number):[null,null];
+    if(!Y) return;
+    const { startMonday, endExclusiveMonday }=contabileMonthBounds(Y,M);
+    const rows=[["Settimana","Entrate","Spese (no mutuo)","Saldo"]];
+    for(let cur=new Date(startMonday); cur<endExclusiveMonday; cur=addDays(cur,7)){
+      const weekStart=new Date(cur), weekEnd=endOfSundayWeek(weekStart);
+      let entrate=0, speseSenzaMutuo=0;
+      (MOVIMENTI||[]).forEach(m=>{ if(!m.data) return; const d=parseDate(m.data); if(d>=weekStart && d<=weekEnd){ if(m.tipo==="entrata") entrate+=Number(m.importo); else if(m.tipo==="spesa") speseSenzaMutuo+=Number(m.importo); } });
+      rows.push([formatRange(weekStart,weekEnd), entrate.toFixed(2), speseSenzaMutuo.toFixed(2), (entrate-speseSenzaMutuo).toFixed(2)]);
+    }
+    downloadFile(`riepilogo-settimanale-${month}.csv`, toCSV(rows), "text/csv;charset=utf-8");
+  });
+
   // ===== TRIMESTRALE =====
   const inputAnnoTri=document.getElementById("anno-tri");
   (function(){ const d=new Date(); if(inputAnnoTri) inputAnnoTri.value=d.getFullYear(); })();
@@ -424,6 +508,18 @@
     }
   }
   inputAnnoTri?.addEventListener('change', aggiornaRiepilogoTrimestri);
+
+  // Export Trimestrale CSV
+  document.getElementById("export-tri").addEventListener("click", ()=>{
+    const year = parseInt(inputAnnoTri.value,10); if(!year) return;
+    const rows=[["Trimestre","Periodo","Entrate","Spese","Mutuo","Saldo"]];
+    for(let q=1;q<=4;q++){ const startMonth=(q-1)*3; const start=new Date(year,startMonth,1); const end=new Date(year,startMonth+3,0);
+      let entrate=0,spese=0,mutuo=0;
+      (MOVIMENTI||[]).forEach(m=>{ if(!m.data) return; const d=parseDate(m.data); if(d>=start && d<=end){ if(m.tipo==="entrata") entrate+=Number(m.importo); else if(m.tipo==="mutuo"){ spese+=Number(m.importo); mutuo+=Number(m.importo); } else spese+=Number(m.importo); } });
+      rows.push([`Q${q}`, `${start.toLocaleDateString()}–${end.toLocaleDateString()}`, entrate.toFixed(2), spese.toFixed(2), mutuo.toFixed(2), (entrate-spese).toFixed(2)]);
+    }
+    downloadFile(`riepilogo-trimestrale-${year}.csv`, toCSV(rows), "text/csv;charset=utf-8");
+  });
 
   // ===== ANNUALE =====
   const inputAnnoAnn=document.getElementById("anno-ann");
@@ -445,22 +541,31 @@
   }
   inputAnnoAnn?.addEventListener('change', aggiornaRiepilogoAnnuale);
 
+  // Export Annuale CSV
+  document.getElementById("export-ann").addEventListener("click", ()=>{
+    const year = parseInt(inputAnnoAnn.value,10); if(!year) return;
+    const rows=[["Mese","Entrate","Spese","Mutuo","Saldo","Montante Accumulato"]];
+    let montante=0;
+    for(let m=0;m<12;m++){ const start=new Date(year,m,1), end=new Date(year,m+1,0);
+      let E=0,S=0,M=0; (MOVIMENTI||[]).forEach(v=>{ if(!v.data) return; const d=parseDate(v.data); if(d>=start && d<=end){ if(v.tipo==="entrata") E+=Number(v.importo); else if(v.tipo==="mutuo"){ S+=Number(v.importo); M+=Number(v.importo); } else S+=Number(v.importo); } });
+      const saldo=E-S; montante+=saldo;
+      rows.push([monthLabel(m), E.toFixed(2), S.toFixed(2), M.toFixed(2), saldo.toFixed(2), montante.toFixed(2)]);
+    }
+    downloadFile(`riepilogo-annuale-${year}.csv`, toCSV(rows), "text/csv;charset=utf-8");
+  });
+
   // ===== DASHBOARD (torta, responsive, senza mutuo) =====
   const inputMeseDash=document.getElementById("mese-dashboard");
   (function(){ const d=new Date(); if(inputMeseDash) inputMeseDash.value=`${d.getFullYear()}-${pad(d.getMonth()+1)}`; })();
   const COLORS = ["#60a5fa","#34d399","#fbbf24","#f87171"];
-  let chartCtx=null;
-  function sizeCanvasToContainer(canvas, ratio=0.66){
+  function sizeCanvasToContainer(canvas, ratio=0.75){
     const dpr = window.devicePixelRatio || 1;
     const parent = canvas.parentElement;
     const w = Math.min(parent.clientWidth, 520);
     const h = Math.max(220, Math.round(w*ratio));
-    canvas.style.width = w + "px";
-    canvas.style.height = h + "px";
-    canvas.width = Math.floor(w*dpr);
-    canvas.height = Math.floor(h*dpr);
-    const ctx = canvas.getContext("2d");
-    ctx.setTransform(dpr,0,0,dpr,0,0);
+    canvas.style.width = w + "px"; canvas.style.height = h + "px";
+    canvas.width = Math.floor(w*dpr); canvas.height = Math.floor(h*dpr);
+    const ctx = canvas.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
     return ctx;
   }
   function drawPie(ctx, values, labels){
@@ -497,8 +602,8 @@
     const values=[0,0,0,0];
     mvs.forEach(m=>{ if(m.tipo==="spesa"){ const idx=labs.indexOf(m.macro||""); if(idx>=0) values[idx]+=Number(m.importo); } });
     const canvas=document.getElementById("chart");
-    chartCtx = sizeCanvasToContainer(canvas, 0.75);
-    drawPie(chartCtx, values, labs);
+    const ctx = sizeCanvasToContainer(canvas, 0.75);
+    drawPie(ctx, values, labs);
   }
   function resizeAndDrawChart(){
     if(document.getElementById('page-dashboard').classList.contains('hidden')) return;
