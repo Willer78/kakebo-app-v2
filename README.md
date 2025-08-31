@@ -1,2 +1,3 @@
-# Kakebo v3.8.2 PWA
-Questa è la versione stabile con supporto mobile e installazione.
+# Kakebo App v3.8.2 – Fine step 3.8
+
+App PWA funzionante e pronta per il testing finale.
