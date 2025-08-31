@@ -33,6 +33,7 @@ table{width:100%;border-collapse:collapse}
 th,td{padding:10px;border-bottom:1px solid #1f2937;text-align:left;white-space:nowrap}
 td:last-child{text-align:right}
 .hidden{display:none}
+.muted{color:var(--muted)}
 .filters{display:flex;gap:14px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
 ul{list-style:disc;padding-left:20px}
 footer{padding:16px 20px;color:var(--muted)}
@@ -41,7 +42,8 @@ footer{padding:16px 20px;color:var(--muted)}
 .backup-card{margin-top:16px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px}
 .backup-card h3{margin:0 0 10px 0}
 .backup-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-/* colonne numeriche allineate a destra */
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px}
+/* allineamento numeri */
 #tabella-riepilogo-sett th:nth-child(2),
 #tabella-riepilogo-sett th:nth-child(3),
 #tabella-riepilogo-sett th:nth-child(4),
@@ -65,8 +67,7 @@ footer{padding:16px 20px;color:var(--muted)}
 #tabella-riepilogo-ann td:nth-child(3),
 #tabella-riepilogo-ann td:nth-child(4),
 #tabella-riepilogo-ann td:nth-child(5),
-#tabella-riepilogo-ann td:nth-child(6){{text-align:right}}
-/* PDF tweaks */
-.pdf-title{{font-size:18px;margin:0 0 8px 0}}
-.pdf-sub{{color:var(--muted);margin:0 0 12px 0}}
-.pdf-footer{{margin-top:10px;color:var(--muted);font-size:12px}}
+#tabella-riepilogo-ann td:nth-child(6){text-align:right}
+.pdf-title{font-size:18px;margin:0 0 8px 0}
+.pdf-sub{color:var(--muted);margin:0 0 12px 0}
+.pdf-footer{margin-top:10px;color:var(--muted);font-size:12px}

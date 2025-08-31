@@ -1,11 +1,18 @@
-# Kakebo App v3.7 (backup/import) — FINAL build 2025-08-31_090800
-Novità:
-- **Backup manuale**: esporta tutti i movimenti in un file `.kakebo` (JSON).
-- **Import con merge/sostituzione**: importa un backup e scegli se **unire** ai dati esistenti o **sostituirli**. Deduplica per `id`.
-- Riordino automatico (più recenti in alto) dopo l'import.
-- Confermate tutte le funzioni di v3.6 (tema, PDF, CSV, dashboard).
+# Kakebo App v3.8 — Login + Sync (base)
+Questa versione aggiunge **login via magic link** e **sync cloud** (Supabase). Offline locale sempre disponibile.
 
-## Deploy su Vercel
-Framework preset: Other  
-Build Command: (vuoto)  
-Output Directory: .
+## Cosa contiene lo ZIP
+- `index.html`, `style.css`, `script.js` (frontend)
+- `supabase_schema.sql` (schema DB, RLS, policy)
+- `README_3.8_SETUP.md` (guida passo-passo)
+
+## Requisiti
+- Account **Supabase** (free)
+- URL del progetto e **anon key**
+
+## Note privacy
+- I dati sono isolati per utente tramite **Row Level Security (RLS)**.
+- Tutto il traffico è su **HTTPS**.
+- Questa è la versione **minima** (Step A). La cifratura end‑to‑end (client‑side) può essere aggiunta come Step B.
+
+Build: 2025-08-31_091842
