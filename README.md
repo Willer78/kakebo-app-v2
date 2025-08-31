@@ -1,3 +1,3 @@
-# Kakebo App v3.8.2 – Fine step 3.8
+# Kakebo App v3.8.2 — FULL PWA (offline-first)
 
-App PWA funzionante e pronta per il testing finale.
+Include inserimenti, riepiloghi (mensile/settimanale/trimestrale/annuale), dashboard, export PDF/CSV, backup/import, tema scuro, PWA.
