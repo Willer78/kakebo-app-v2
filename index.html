@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Kakebo App v3.9.0 (INLINE, hardened)</title>
+  <title>Kakebo App v3.9.1 (INLINE, hardened)</title>
   <meta name="theme-color" content="#2563eb"/>
   <style>
   :root{--bg:#f7f7fb;--fg:#222;--muted:#6b7280;--card:#fff;--border:#e5e7eb;--accent:#2563eb;--tab:#374151;--tab-active:#2563eb}
@@ -32,12 +32,13 @@
   .legend{display:flex;gap:12px;flex-wrap:wrap}
   .legend-item{display:flex;align-items:center;gap:6px}
   .color-dot{width:10px;height:10px;border-radius:50%}
+  .error-banner{background:#fee2e2;color:#7f1d1d;border:1px solid #fecaca;border-radius:8px;padding:8px 12px;margin:12px 0;display:none}
   </style>
 </head>
 <body>
   <header>
     <div class="header-left">
-      <h1>Kakebo – Gestione Spese (v3.9.0 inline)</h1>
+      <h1>Kakebo – Gestione Spese (v3.9.1 inline)</h1>
       <nav>
         <button id="tab-inserimento" class="tab active">Inserimento dati</button>
         <button id="tab-riepilogo" class="tab">Riepilogo mensile</button>
@@ -53,6 +54,8 @@
   </header>
 
   <main>
+    <div id="err" class="error-banner"></div>
+
     <section id="sezione-inserimento">
       <form id="form-movimento" autocomplete="off">
         <div class="grid">
@@ -70,7 +73,6 @@
             </select>
           </label>
           <label id="wrap-macro">Macro area
-            <!-- PRE-RENDERED options: never empty -->
             <select id="macro">
               <option value="Sopravvivenza" selected>Sopravvivenza</option>
               <option value="Optional">Optional</option>
@@ -79,7 +81,6 @@
             </select>
           </label>
           <label id="wrap-categoria">Sotto-categoria
-            <!-- PRE-RENDERED default categories for Sopravvivenza -->
             <select id="categoria">
               <option value="Alimentazione" selected>Alimentazione</option>
               <option value="Farmacia">Farmacia</option>
@@ -174,7 +175,7 @@
     </section>
   </main>
 
-  <footer><small>v3.9.0 inline – build 2025-08-31 17:49:18</small></footer>
+  <footer><small>v3.9.1 inline – build 2025-08-31 17:58:55</small></footer>
 
   <script>
   // ===== Tema =====
@@ -211,6 +212,7 @@
   const KEY="kakebo_movimenti_v1"; let MOVIMENTI=[]; try{ MOVIMENTI=JSON.parse(localStorage.getItem(KEY)||"[]"); }catch{ MOVIMENTI=[]; }
   const salva=()=>localStorage.setItem(KEY, JSON.stringify(MOVIMENTI));
   const fmt=n=>`€ ${Number(n||0).toFixed(2)}`;
+  const showErr=msg=>{ const el=document.getElementById("err"); if(!el) return; el.textContent=msg; el.style.display="block"; setTimeout(()=>{el.style.display="none"},4000); };
 
   // ===== Tabs =====
   const tabIns=$("#tab-inserimento"), tabRiep=$("#tab-riepilogo"), tabSett=$("#tab-riepilogo-sett"), tabTri=$("#tab-riepilogo-tri"), tabAnn=$("#tab-riepilogo-ann"), tabDash=$("#tab-dashboard");
@@ -235,44 +237,41 @@
   const wrapMacro=$("#wrap-macro"), wrapCategoria=$("#wrap-categoria");
 
   function setMutuoVisibility(isMutuo){
-    if(isMutuo){
-      wrapMacro?.classList.add("hidden"); wrapCategoria?.classList.add("hidden");
-    } else {
-      wrapMacro?.classList.remove("hidden"); wrapCategoria?.classList.remove("hidden");
-    }
+    if(isMutuo){ wrapMacro?.classList.add("hidden"); wrapCategoria?.classList.add("hidden"); }
+    else { wrapMacro?.classList.remove("hidden"); wrapCategoria?.classList.remove("hidden"); }
   }
   function repopulateForTipo(){
-    if(!selTipo||!selMacro||!selCat) return;
-    const tipo=selTipo.value;
-    if(tipo==="mutuo"){
-      setMutuoVisibility(true);
-      return;
-    }
-    setMutuoVisibility(false);
-    // If entrata -> lock macro=Entrate and categories=Entrate
-    if(tipo==="entrata"){
-      selMacro.innerHTML='<option value="Entrate" selected>Entrate</option>';
-      selCat.innerHTML = CATEGORIE.Entrate.map(v=>`<option value="${v}">${v}</option>`).join("");
-      selCat.value = CATEGORIE.Entrate[0];
-      return;
-    }
-    // tipo=spesa -> show 4 macros. Keep current selection if valid.
-    const macroOptions=["Sopravvivenza","Optional","Cultura","Extra"];
-    const current=macroOptions.includes(selMacro.value) ? selMacro.value : "Sopravvivenza";
-    selMacro.innerHTML = macroOptions.map(m=>`<option value="${m}" ${m===current?"selected":""}>${m}</option>`).join("");
-    // categories for selected macro
-    const cats=(CATEGORIE[current]||[]);
-    const currentCat = cats.includes(selCat.value) ? selCat.value : (cats[0]||"");
-    selCat.innerHTML = cats.map(v=>`<option value="${v}" ${v===currentCat?"selected":""}>${v}</option>`).join("");
+    try{
+      if(!selTipo||!selMacro||!selCat) return;
+      const tipo=selTipo.value;
+      if(tipo==="mutuo"){
+        setMutuoVisibility(true);
+        return;
+      }
+      setMutuoVisibility(false);
+      if(tipo==="entrata"){
+        selMacro.innerHTML='<option value="Entrate" selected>Entrate</option>';
+        selCat.innerHTML = CATEGORIE.Entrate.map(v=>`<option value="${v}">${v}</option>`).join("");
+        selCat.value = CATEGORIE.Entrate[0];
+        return;
+      }
+      const macroOptions=["Sopravvivenza","Optional","Cultura","Extra"];
+      const current=macroOptions.includes(selMacro.value) ? selMacro.value : "Sopravvivenza";
+      selMacro.innerHTML = macroOptions.map(m=>`<option value="${m}" ${m===current?"selected":""}>${m}</option>`).join("");
+      const cats=(CATEGORIE[current]||[]);
+      const currentCat = cats.includes(selCat.value) ? selCat.value : (cats[0]||"");
+      selCat.innerHTML = cats.map(v=>`<option value="${v}" ${v===currentCat?"selected":""}>${v}</option>`).join("");
+    }catch(e){ console.error("repopulateForTipo", e); showErr("Errore nel popolamento dei campi. Riprova."); }
   }
   function onMacroChange(){
-    if(!selMacro||!selCat) return;
-    const cats=(CATEGORIE[selMacro.value]||[]);
-    selCat.innerHTML = cats.map(v=>`<option value="${v}">${v}</option>`).join("");
-    if(cats.length) selCat.value=cats[0];
+    try{
+      if(!selMacro||!selCat) return;
+      const cats=(CATEGORIE[selMacro.value]||[]);
+      selCat.innerHTML = cats.map(v=>`<option value="${v}">${v}</option>`).join("");
+      if(cats.length) selCat.value=cats[0];
+    }catch(e){ console.error("onMacroChange", e); }
   }
 
-  // Safe boot (no empty selects ever)
   (function boot(){
     try{
       if(inputData) inputData.value=todayStr();
@@ -281,6 +280,12 @@
       selMacro?.addEventListener("change", onMacroChange);
     }catch(e){ console.error("boot error", e); }
   })();
+
+  // ===== Helpers: safe id =====
+  function safeId(){
+    try{ if(window.crypto && crypto.randomUUID) return crypto.randomUUID(); }catch{}
+    return "id-"+Date.now()+"-"+Math.random().toString(16).slice(2);
+  }
 
   // ===== Tabella movimenti & storage =====
   function renderTabella(){ try{
@@ -291,31 +296,29 @@
       tbody.appendChild(tr);
     });
     tbody.querySelectorAll('button.del').forEach(btn=>btn.addEventListener('click',ev=>{ const id=ev.currentTarget.getAttribute('data-id'); MOVIMENTI=(MOVIMENTI||[]).filter(x=>x.id!==id); salva(); renderTabella(); aggiornaTutti(); }));
-  }catch(e){ console.error("renderTabella error", e); }}
+  }catch(e){ console.error("renderTabella error", e); showErr("Errore nel rendering della tabella."); }}
 
-  document.getElementById('form-movimento')?.addEventListener('submit', e=>{ try{
+  document.getElementById('form-movimento')?.addEventListener('submit', e=>{ 
     e.preventDefault();
-    const data=inputData?.value; const importo=parseFloat(inputImporto?.value||""); const tipo=selTipo?.value;
-    if(!data || isNaN(importo)){ alert("Controlla data e importo."); return; }
-    let macro="", categoria="";
-    if(tipo==="mutuo"){ macro="Mutuo"; categoria="—"; }
-    else if(tipo==="entrata"){ macro="Entrate"; categoria=selCat?.value||""; if(!categoria){ alert("Seleziona la voce di entrata."); return; } }
-    else { macro=selMacro?.value||""; categoria=selCat?.value||""; if(!macro||!categoria){ alert("Seleziona macro e sotto-categoria."); return; } }
-    const nota=(inputNota?.value||"").trim();
-    const mov={ id:crypto.randomUUID(), data, importo:Number(importo), tipo, macro, categoria, nota, updated_at:new Date().toISOString() };
-    MOVIMENTI=[mov,...(MOVIMENTI||[])]; salva(); renderTabella(); e.target.reset(); if(inputData) inputData.value=todayStr(); if(selTipo) selTipo.value="spesa"; repopulateForTipo(); aggiornaTutti();
-  }catch(err){ console.error("submit error", err); }});
+    try{
+      const data=inputData?.value; const importo=parseFloat(inputImporto?.value||""); const tipo=selTipo?.value;
+      if(!data || isNaN(importo)){ alert("Controlla data e importo."); return; }
+      let macro="", categoria="";
+      if(tipo==="mutuo"){ macro="Mutuo"; categoria="—"; }
+      else if(tipo==="entrata"){ macro="Entrate"; categoria=selCat?.value||""; if(!categoria){ alert("Seleziona la voce di entrata."); return; } }
+      else { macro=selMacro?.value||""; categoria=selCat?.value||""; if(!macro||!categoria){ alert("Seleziona macro e sotto-categoria."); return; } }
+      const nota=(inputNota?.value||"").trim();
+      const mov={ id:safeId(), data, importo:Number(importo), tipo, macro, categoria, nota, updated_at:new Date().toISOString() };
+      MOVIMENTI=[mov,...(MOVIMENTI||[])]; salva(); renderTabella(); (e.target).reset(); if(inputData) inputData.value=todayStr(); if(selTipo) selTipo.value="spesa"; repopulateForTipo(); aggiornaTutti();
+    }catch(err){ console.error("submit error", err); showErr("Errore durante il salvataggio del movimento."); }
+  });
 
   document.getElementById('pulisci')?.addEventListener('click', ()=>{ try{
-    document.getElementById('form-movimento')?.reset();
-    if(inputData) inputData.value=todayStr();
-    if(selTipo) selTipo.value="spesa";
-    repopulateForTipo();
+    document.getElementById('form-movimento')?.reset(); if(inputData) inputData.value=todayStr(); if(selTipo) selTipo.value="spesa"; repopulateForTipo();
   }catch(e){ console.error("pulisci error", e); }});
-
   document.getElementById('cancella-tutto')?.addEventListener('click', ()=>{ try{
     if(confirm("Svuotare l'archivio locale?")){ MOVIMENTI=[]; salva(); renderTabella(); aggiornaTutti(); }
-  }catch(e){ console.error("wipe error", e); }});
+  }catch(e){ console.error("wipe error", e); showErr("Errore nello svuotare l'archivio."); }});
 
   // ===== Riepilogo mensile =====
   const inputMese=$("#mese-riepilogo"); (function(){ const d=new Date(); if(inputMese) inputMese.value=`${d.getFullYear()}-${pad(d.getMonth()+1)}`; })();
